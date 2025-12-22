@@ -7,23 +7,28 @@
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
+            <div class="card shadow-lg">
+                <div class="card-header">
                     <h3 class="mb-0">
-                        <i class="fas fa-upload"></i> Upload Key Commands File
+                        <i class="fas fa-upload me-2"></i>Upload Key Commands File
                     </h3>
+                    <p class="text-muted mb-0 mt-2">Share your Cubase macros with the community</p>
                 </div>
                 
                 <div class="card-body">
                     <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>How to export your Key Commands file:</strong>
-                        <ol class="mb-0 mt-2">
-                            <li>Open Cubase and go to <strong>Studio → Studio Setup</strong></li>
-                            <li>Click on <strong>Key Commands</strong> in the left panel</li>
-                            <li>Click the <strong>Export</strong> button and save your file</li>
-                            <li>Upload the saved XML file below</li>
-                        </ol>
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-info-circle fa-lg me-3 mt-1"></i>
+                            <div>
+                                <strong>How to export your Key Commands file:</strong>
+                                <ol class="mb-0 mt-2">
+                                    <li>Open Cubase and go to <strong>Studio → Studio Setup</strong></li>
+                                    <li>Click on <strong>Key Commands</strong> in the left panel</li>
+                                    <li>Click the <strong>Export</strong> button and save your file</li>
+                                    <li>Upload the saved XML file below</li>
+                                </ol>
+                            </div>
+                        </div>
                     </div>
                     
                     <form method="post" enctype="multipart/form-data">
@@ -84,16 +89,18 @@
                             <label for="{{ form.file.id_for_label }}" class="form-label">
                                 <i class="fas fa-file-upload"></i> Key Commands File *
                             </label>
-                            {{ form.file }}
+                            <div class="file-upload-wrapper">
+                                {{ form.file }}
+                            </div>
                             {% if form.file.errors %}
-                                <div class="text-danger">
+                                <div class="text-danger mt-2">
                                     {{ form.file.errors }}
                                 </div>
                             {% endif %}
                             {% if form.file.help_text %}
-                                <div class="form-text">{{ form.file.help_text }}</div>
+                                <div class="form-text mt-2">{{ form.file.help_text }}</div>
                             {% endif %}
-                            <div class="form-text">
+                            <div class="form-text mt-2">
                                 <i class="fas fa-info-circle"></i> 
                                 Choose your exported Key Commands.xml file (max 10MB)
                             </div>
@@ -117,7 +124,7 @@
                             </div>
                         {% endif %}
                         
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                             <a href="{% url 'macros:my_keycommands' %}" class="btn btn-outline-secondary">
                                 <i class="fas fa-arrow-left"></i> Back to My Files
                             </a>
@@ -162,14 +169,12 @@
     </div>
 </div>
 
-<!-- Simple Loading Indicator -->
-<div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+<!-- Modern Loading Indicator -->
+<div id="loading-overlay" class="loading-overlay" style="display: none;">
     <div class="text-center text-white">
-        <div class="spinner-border text-light mb-3" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <h5>Processing your Key Commands file...</h5>
-        <p>This may take a few moments</p>
+        <div class="spinner mb-4"></div>
+        <h4 class="mb-2">Processing your Key Commands file...</h4>
+        <p class="opacity-75">This may take a few moments. Please don't close this page.</p>
     </div>
 </div>
 {% endblock %}

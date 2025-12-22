@@ -97,18 +97,18 @@
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h1 class="h3 mb-1">
-                        <i class="fas fa-search"></i> Browse Macros
+                    <h1 class="h2 mb-2">
+                        <i class="fas fa-search text-primary me-2"></i>Browse Macros
                     </h1>
                     <p class="text-muted mb-0">
-                        {{ total_count }} macro{{ total_count|pluralize }} found
+                        <strong>{{ total_count }}</strong> macro{{ total_count|pluralize }} found
                     </p>
                 </div>
                 
                 {% if user.is_authenticated %}
                 <div>
                     <a href="{% url 'macros:upload_keycommands' %}" class="btn btn-primary">
-                        <i class="fas fa-upload"></i> Upload Your Macros
+                        <i class="fas fa-upload"></i> Upload Macros
                     </a>
                 </div>
                 {% endif %}
@@ -116,23 +116,23 @@
             
             <!-- Macros Grid -->
             {% if page_obj %}
-            <div class="row">
+            <div class="row g-4">
                 {% for macro in page_obj %}
-                <div class="col-xl-4 col-lg-6 col-md-12 mb-4">
-                    <div class="card macro-card h-100">
+                <div class="col-xl-4 col-lg-6">
+                    <div class="macro-card card">
                         <div class="card-body">
                             <!-- Macro Title -->
-                            <h6 class="card-title mb-2">
-                                <a href="{% url 'macros:macro_detail' macro.id %}" class="macro-title">
+                            <h6 class="card-title macro-title mb-3">
+                                <a href="{% url 'macros:macro_detail' macro.id %}">
                                     {{ macro.name|truncatechars:50 }}
                                 </a>
                             </h6>
                             
                             <!-- Category Badge -->
                             {% if macro.category %}
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <a href="{% url 'macros:category_detail' macro.category.id %}" class="text-decoration-none">
-                                    <span class="badge bg-secondary category-badge">
+                                    <span class="category-badge">
                                         <i class="fas fa-folder"></i> {{ macro.category.name }}
                                     </span>
                                 </a>
@@ -141,7 +141,7 @@
                             
                             <!-- Key Binding -->
                             {% if macro.key_binding %}
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <span class="key-binding">
                                     <i class="fas fa-keyboard"></i> {{ macro.key_binding }}
                                 </span>
@@ -150,13 +150,13 @@
                             
                             <!-- Description -->
                             {% if macro.description %}
-                            <p class="card-text text-muted small text-truncate-2">
+                            <p class="card-text text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
                                 {{ macro.description }}
                             </p>
                             {% endif %}
                             
                             <!-- Author and Rating -->
-                            <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
                                 <small class="text-muted">
                                     by {% if macro.keycommands_file.user.username %}
                                         <a href="{% url 'accounts:public_profile' macro.keycommands_file.user.username %}" class="text-decoration-none">
@@ -183,7 +183,7 @@
                             
                             <!-- Cubase Version -->
                             {% if macro.keycommands_file.cubase_version %}
-                            <div class="mb-2">
+                            <div class="mb-3">
                                 <small class="text-muted">
                                     <i class="fas fa-compact-disc"></i> {{ macro.keycommands_file.cubase_version.version }}
                                 </small>
@@ -192,7 +192,7 @@
                         </div>
                         
                         <!-- Card Footer -->
-                        <div class="card-footer bg-transparent">
+                        <div class="card-footer">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div class="d-flex gap-3">
                                     <small class="text-muted">
@@ -205,7 +205,7 @@
                                 
                                 <div class="d-flex gap-2">
                                     {% if user.is_authenticated %}
-                                    <button class="btn btn-sm btn-outline-danger btn-favorite" data-macro-id="{{ macro.id }}">
+                                    <button class="btn btn-sm btn-outline-danger btn-favorite" data-macro-id="{{ macro.id }}" title="Add to favorites">
                                         <i class="far fa-heart"></i>
                                     </button>
                                     {% endif %}
@@ -269,8 +269,10 @@
             {% else %}
             <!-- No Results -->
             <div class="text-center py-5">
-                <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                <h3>No macros found</h3>
+                <div class="mb-4">
+                    <i class="fas fa-search" style="font-size: 4rem; color: var(--gray-400);"></i>
+                </div>
+                <h3 class="mb-3">No macros found</h3>
                 <p class="text-muted mb-4">Try adjusting your search criteria or browse all categories.</p>
                 
                 <div class="d-flex gap-2 justify-content-center flex-wrap">

@@ -25,43 +25,43 @@
     </div>
     
     <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-file-upload fa-2x mb-2"></i>
-                    <h3 class="mb-1">{{ total_uploads }}</h3>
-                    <small>Total Uploads</small>
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="text-center">
+                    <i class="fas fa-file-upload fa-2x mb-3" style="color: #1f2937;"></i>
+                    <div class="stat-number" style="color: #1f2937;">{{ total_uploads }}</div>
+                    <div class="stat-label">Total Uploads</div>
                 </div>
             </div>
         </div>
         
-        <div class="col-md-3 mb-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-eye fa-2x mb-2"></i>
-                    <h3 class="mb-1">{{ total_public_macros }}</h3>
-                    <small>Public Macros</small>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="text-center">
+                    <i class="fas fa-eye fa-2x mb-3" style="color: var(--success);"></i>
+                    <div class="stat-number" style="color: #10b981;">{{ total_public_macros }}</div>
+                    <div class="stat-label">Public Macros</div>
                 </div>
             </div>
         </div>
         
-        <div class="col-md-3 mb-3">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-heart fa-2x mb-2"></i>
-                    <h3 class="mb-1">{{ total_favorites }}</h3>
-                    <small>Favorites</small>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="text-center">
+                    <i class="fas fa-heart fa-2x mb-3" style="color: var(--danger);"></i>
+                    <div class="stat-number" style="color: #ef4444;">{{ total_favorites }}</div>
+                    <div class="stat-label">Favorites</div>
                 </div>
             </div>
         </div>
         
-        <div class="col-md-3 mb-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body text-center">
-                    <i class="fas fa-star fa-2x mb-2"></i>
-                    <h3 class="mb-1">{{ profile.total_downloads }}</h3>
-                    <small>Downloads</small>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <div class="text-center">
+                    <i class="fas fa-download fa-2x mb-3" style="color: var(--warning);"></i>
+                    <div class="stat-number" style="color: #f59e0b;">{{ profile.total_downloads }}</div>
+                    <div class="stat-label">Downloads</div>
                 </div>
             </div>
         </div>
@@ -73,44 +73,44 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="mb-0">
-                        <i class="fas fa-bolt"></i> Quick Actions
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-2 col-sm-4 col-6 mb-3">
-                            <a href="{% url 'macros:upload_keycommands' %}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-upload d-block mb-1"></i>
+                    <div class="row g-3">
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <a href="{% url 'macros:upload_keycommands' %}" class="btn btn-outline-primary w-100 d-flex flex-column align-items-center py-3">
+                                <i class="fas fa-upload fa-2x mb-2"></i>
                                 <small>Upload</small>
                             </a>
                         </div>
-                        <div class="col-md-2 col-sm-4 col-6 mb-3">
-                            <a href="{% url 'macros:my_keycommands' %}" class="btn btn-outline-info w-100">
-                                <i class="fas fa-file-alt d-block mb-1"></i>
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <a href="{% url 'macros:my_keycommands' %}" class="btn btn-outline-info w-100 d-flex flex-column align-items-center py-3">
+                                <i class="fas fa-file-alt fa-2x mb-2"></i>
                                 <small>My Files</small>
                             </a>
                         </div>
-                        <div class="col-md-2 col-sm-4 col-6 mb-3">
-                            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-success w-100">
-                                <i class="fas fa-user d-block mb-1"></i>
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-success w-100 d-flex flex-column align-items-center py-3">
+                                <i class="fas fa-user fa-2x mb-2"></i>
                                 <small>Profile</small>
                             </a>
                         </div>
-                        <div class="col-md-2 col-sm-4 col-6 mb-3">
-                            <a href="{% url 'macros:macro_list' %}" class="btn btn-outline-secondary w-100">
-                                <i class="fas fa-search d-block mb-1"></i>
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <a href="{% url 'macros:macro_list' %}" class="btn btn-outline-secondary w-100 d-flex flex-column align-items-center py-3">
+                                <i class="fas fa-search fa-2x mb-2"></i>
                                 <small>Browse</small>
                             </a>
                         </div>
-                        <div class="col-md-2 col-sm-4 col-6 mb-3">
-                            <a href="{% url 'macros:popular_macros' %}" class="btn btn-outline-warning w-100">
-                                <i class="fas fa-fire d-block mb-1"></i>
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <a href="{% url 'macros:popular_macros' %}" class="btn btn-outline-warning w-100 d-flex flex-column align-items-center py-3">
+                                <i class="fas fa-fire fa-2x mb-2"></i>
                                 <small>Popular</small>
                             </a>
                         </div>
-                        <div class="col-md-2 col-sm-4 col-6 mb-3">
-                            <a href="{% url 'accounts:edit_profile' %}" class="btn btn-outline-dark w-100">
-                                <i class="fas fa-cog d-block mb-1"></i>
+                        <div class="col-md-2 col-sm-4 col-6">
+                            <a href="{% url 'accounts:edit_profile' %}" class="btn btn-outline-dark w-100 d-flex flex-column align-items-center py-3">
+                                <i class="fas fa-cog fa-2x mb-2"></i>
                                 <small>Settings</small>
                             </a>
                         </div>

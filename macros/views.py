@@ -359,7 +359,7 @@ def upload_keycommands(request):
                     print(f"🔍 DEBUG: User error message: {error_msg}")
                     messages.error(request, error_msg)
                 elif "Invalid XML" in str(e) or "XML parsing error" in str(e):
-                    error_msg = "The uploaded file is not a valid XML file. Please ensure you're uploading a Key Commands file exported from Cubase."
+                    error_msg = "The uploaded file is not a valid XML file. Please ensure you're uploading a Key Commands file generated from Cubase."
                     print(f"🔍 DEBUG: User error message: {error_msg}")
                     messages.error(request, error_msg)
                 else:
