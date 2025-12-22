@@ -57,7 +57,7 @@ A Django web application for sharing and managing Cubase Key Commands and macros
 4. **Configure settings**
    ```bash
    # Copy and edit settings if needed
-   cp cubase_macros_project/settings.py cubase_macros_project/local_settings.py
+   cp cubase_macros_shop/settings.py cubase_macros_shop/local_settings.py
    ```
 
 5. **Run migrations**
@@ -119,7 +119,7 @@ A Django web application for sharing and managing Cubase Key Commands and macros
 #### **Project Structure**
 ```
 cubasemacros/
-├── cubase_macros_project/      # Main Django project
+├── cubase_macros_shop/      # Main Django project
 │   ├── settings.py
 │   ├── urls.py
 │   └── wsgi.py

@@ -1,5 +1,5 @@
 """
-URL configuration for cubase_macros_project project.
+URL configuration for cubase_macros_shop project.
 """
 from django.contrib import admin
 from django.urls import path, include

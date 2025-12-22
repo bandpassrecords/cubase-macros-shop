@@ -1,5 +1,5 @@
 """
-ASGI config for cubase_macros_project project.
+ASGI config for cubase_macros_shop project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cubase_macros_project.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cubase_macros_shop.settings')
 
 application = get_asgi_application()
