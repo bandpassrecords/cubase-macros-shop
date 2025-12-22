@@ -68,7 +68,7 @@ def macro_list(request):
         elif sort_by == 'most_popular':
             macros = macros.order_by('-view_count', '-created_at')
         elif sort_by == 'highest_rated':
-            macros = macros.order_by('-avg_rating', '-vote_count', '-created_at')
+            macros = macros.order_by('-avg_rating', '-total_votes', '-created_at')
         elif sort_by == 'most_downloaded':
             macros = macros.order_by('-download_count', '-created_at')
         elif sort_by == 'alphabetical':
