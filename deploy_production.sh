@@ -1,0 +1,657 @@
+#!/bin/bash
+
+###############################################################################
+# Production Deployment Script for CentOS Stream 10
+# Cubase Macros Hub - Django Application
+###############################################################################
+
+set -e  # Exit on error
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration variables (will be prompted)
+PROJECT_DIR=""
+VENV_DIR=""
+DOMAIN="cms.bandpassrecords.com"
+SERVICE_USER="nginx"
+SERVICE_GROUP="nginx"
+GUNICORN_WORKERS=3
+
+###############################################################################
+# Helper Functions
+###############################################################################
+
+print_header() {
+    echo -e "\n${BLUE}========================================${NC}"
+    echo -e "${BLUE}$1${NC}"
+    echo -e "${BLUE}========================================${NC}\n"
+}
+
+print_success() {
+    echo -e "${GREEN}✓ $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}✗ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠ $1${NC}"
+}
+
+print_info() {
+    echo -e "${BLUE}ℹ $1${NC}"
+}
+
+confirm() {
+    local prompt="$1"
+    local response
+    while true; do
+        read -p "$(echo -e ${YELLOW}"$prompt (y/n): "${NC})" response
+        case $response in
+            [Yy]* ) return 0;;
+            [Nn]* ) return 1;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+}
+
+check_root() {
+    if [ "$EUID" -ne 0 ]; then 
+        print_error "Please run as root or with sudo"
+        exit 1
+    fi
+}
+
+check_env_file() {
+    if [ ! -f "$PROJECT_DIR/.env" ]; then
+        print_error ".env file not found at $PROJECT_DIR/.env"
+        print_info "Please create the .env file with all necessary configuration before running this script"
+        exit 1
+    fi
+    print_success ".env file found"
+}
+
+###############################################################################
+# Step 1: System Updates
+###############################################################################
+
+step_system_update() {
+    print_header "Step 1: System Updates"
+    
+    if confirm "Update system packages"; then
+        print_info "Updating system packages..."
+        dnf update -y
+        print_success "System packages updated"
+    else
+        print_warning "Skipping system update"
+    fi
+}
+
+###############################################################################
+# Step 2: Install System Dependencies
+###############################################################################
+
+step_install_dependencies() {
+    print_header "Step 2: Install System Dependencies"
+    
+    if confirm "Install system dependencies (Python, Nginx, Git, etc.)"; then
+        print_info "Installing system dependencies..."
+        
+        # Install development tools
+        dnf groupinstall -y "Development Tools" || print_warning "Development Tools group already installed"
+        
+        # Install Python and dependencies
+        dnf install -y python3 python3-pip python3-devel gcc gcc-c++ make
+        
+        # Install Git
+        dnf install -y git
+        
+        # Install Nginx
+        dnf install -y nginx
+        
+        # Install Firewalld
+        dnf install -y firewalld
+        
+        print_success "System dependencies installed"
+    else
+        print_warning "Skipping dependency installation"
+    fi
+}
+
+###############################################################################
+# Step 3: Configure Firewall
+###############################################################################
+
+step_configure_firewall() {
+    print_header "Step 3: Configure Firewall"
+    
+    if confirm "Configure firewall (firewalld) to allow HTTP and HTTPS"; then
+        print_info "Configuring firewall..."
+        
+        systemctl enable firewalld
+        systemctl start firewalld
+        
+        firewall-cmd --permanent --add-service=http
+        firewall-cmd --permanent --add-service=https
+        firewall-cmd --reload
+        
+        print_success "Firewall configured"
+        print_info "Current firewall rules:"
+        firewall-cmd --list-all
+    else
+        print_warning "Skipping firewall configuration"
+    fi
+}
+
+###############################################################################
+# Step 4: Setup Python Virtual Environment
+###############################################################################
+
+step_setup_venv() {
+    print_header "Step 4: Setup Python Virtual Environment"
+    
+    if [ -z "$VENV_DIR" ]; then
+        VENV_DIR="$PROJECT_DIR/venv"
+    fi
+    
+    if [ -d "$VENV_DIR" ]; then
+        print_warning "Virtual environment already exists at $VENV_DIR"
+        if confirm "Recreate virtual environment (this will delete the existing one)"; then
+            rm -rf "$VENV_DIR"
+        else
+            print_info "Using existing virtual environment"
+            return 0
+        fi
+    fi
+    
+    if confirm "Create Python virtual environment at $VENV_DIR"; then
+        print_info "Creating virtual environment..."
+        python3 -m venv "$VENV_DIR"
+        print_success "Virtual environment created"
+        
+        print_info "Upgrading pip..."
+        "$VENV_DIR/bin/pip" install --upgrade pip
+        print_success "Pip upgraded"
+    else
+        print_warning "Skipping virtual environment creation"
+    fi
+}
+
+###############################################################################
+# Step 5: Install Python Dependencies
+###############################################################################
+
+step_install_python_deps() {
+    print_header "Step 5: Install Python Dependencies"
+    
+    if [ ! -d "$VENV_DIR" ]; then
+        print_error "Virtual environment not found at $VENV_DIR"
+        return 1
+    fi
+    
+    if [ ! -f "$PROJECT_DIR/requirements.txt" ]; then
+        print_error "requirements.txt not found at $PROJECT_DIR/requirements.txt"
+        return 1
+    fi
+    
+    if confirm "Install Python dependencies from requirements.txt"; then
+        print_info "Installing Python dependencies..."
+        "$VENV_DIR/bin/pip" install -r "$PROJECT_DIR/requirements.txt"
+        print_success "Python dependencies installed"
+    else
+        print_warning "Skipping Python dependencies installation"
+    fi
+}
+
+###############################################################################
+# Step 6: Run Database Migrations
+###############################################################################
+
+step_run_migrations() {
+    print_header "Step 6: Run Database Migrations"
+    
+    if confirm "Run Django database migrations"; then
+        print_info "Running migrations..."
+        cd "$PROJECT_DIR"
+        "$VENV_DIR/bin/python" manage.py migrate
+        print_success "Database migrations completed"
+    else
+        print_warning "Skipping database migrations"
+    fi
+}
+
+###############################################################################
+# Step 7: Collect Static Files
+###############################################################################
+
+step_collect_static() {
+    print_header "Step 7: Collect Static Files"
+    
+    if confirm "Collect static files for production"; then
+        print_info "Collecting static files..."
+        cd "$PROJECT_DIR"
+        "$VENV_DIR/bin/python" manage.py collectstatic --noinput
+        print_success "Static files collected"
+    else
+        print_warning "Skipping static files collection"
+    fi
+}
+
+###############################################################################
+# Step 8: Create Systemd Service
+###############################################################################
+
+step_create_systemd_service() {
+    print_header "Step 8: Create Systemd Service"
+    
+    if confirm "Create systemd service for Gunicorn"; then
+        print_info "Creating systemd service file..."
+        
+        # Create log directory
+        mkdir -p /var/log/gunicorn
+        chown "$SERVICE_USER:$SERVICE_GROUP" /var/log/gunicorn
+        chmod 755 /var/log/gunicorn
+        
+        # Create service file
+        SERVICE_FILE="/etc/systemd/system/cubase-macros-shop.service"
+        
+        cat > "$SERVICE_FILE" << EOF
+[Unit]
+Description=Gunicorn daemon for Cubase Macros Hub Django application
+After=network.target
+
+[Service]
+User=$SERVICE_USER
+Group=$SERVICE_GROUP
+WorkingDirectory=$PROJECT_DIR
+Environment="PATH=$VENV_DIR/bin"
+Environment="DJANGO_SETTINGS_MODULE=cubase_macros_shop.settings.production"
+EnvironmentFile=$PROJECT_DIR/.env
+ExecStart=$VENV_DIR/bin/gunicorn \\
+    --workers $GUNICORN_WORKERS \\
+    --bind unix:/run/gunicorn.sock \\
+    --access-logfile /var/log/gunicorn/access.log \\
+    --error-logfile /var/log/gunicorn/error.log \\
+    cubase_macros_shop.wsgi:application
+
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        
+        print_success "Systemd service file created at $SERVICE_FILE"
+        
+        # Reload systemd
+        systemctl daemon-reload
+        print_success "Systemd daemon reloaded"
+        
+        # Enable service
+        if confirm "Enable service to start on boot"; then
+            systemctl enable cubase-macros-shop.service
+            print_success "Service enabled for auto-start"
+        fi
+    else
+        print_warning "Skipping systemd service creation"
+    fi
+}
+
+###############################################################################
+# Step 9: Configure Nginx
+###############################################################################
+
+step_configure_nginx() {
+    print_header "Step 9: Configure Nginx"
+    
+    if confirm "Create Nginx configuration for $DOMAIN"; then
+        print_info "Creating Nginx configuration..."
+        
+        NGINX_CONF="/etc/nginx/conf.d/${DOMAIN}.conf"
+        
+        cat > "$NGINX_CONF" << EOF
+# HTTP to HTTPS redirect
+server {
+    listen 80;
+    server_name $DOMAIN;
+    return 301 https://\$server_name\$request_uri;
+}
+
+# HTTPS server
+server {
+    listen 443 ssl http2;
+    server_name $DOMAIN;
+
+    # SSL certificates (will be configured by Certbot)
+    # ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    
+    # SSL Configuration (recommended settings)
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-SHA256:ECDHE-RSA-AES256-SHA384;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+    
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    client_max_body_size 10M;
+
+    location /static/ {
+        alias $PROJECT_DIR/staticfiles/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /media/ {
+        alias $PROJECT_DIR/media/;
+        expires 30d;
+    }
+
+    location / {
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_pass http://unix:/run/gunicorn.sock;
+    }
+}
+EOF
+        
+        print_success "Nginx configuration created at $NGINX_CONF"
+        
+        # Test Nginx configuration
+        if nginx -t; then
+            print_success "Nginx configuration test passed"
+        else
+            print_error "Nginx configuration test failed"
+            return 1
+        fi
+    else
+        print_warning "Skipping Nginx configuration"
+    fi
+}
+
+###############################################################################
+# Step 10: Setup Let's Encrypt SSL
+###############################################################################
+
+step_setup_ssl() {
+    print_header "Step 10: Setup Let's Encrypt SSL Certificate"
+    
+    if confirm "Install and configure Let's Encrypt SSL certificate"; then
+        print_info "Installing Certbot..."
+        
+        # Install EPEL repository
+        dnf install -y epel-release
+        
+        # Install Certbot
+        dnf install -y certbot python3-certbot-nginx
+        
+        print_success "Certbot installed"
+        
+        if confirm "Obtain SSL certificate for $DOMAIN (requires domain to point to this server)"; then
+            print_info "Obtaining SSL certificate..."
+            print_warning "Make sure $DOMAIN points to this server's IP address"
+            print_warning "Make sure port 80 is accessible from the internet"
+            
+            if confirm "Continue with certificate generation"; then
+                certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --email "$(grep DEFAULT_FROM_EMAIL "$PROJECT_DIR/.env" | cut -d '=' -f2 || echo 'admin@example.com')"
+                
+                if [ $? -eq 0 ]; then
+                    print_success "SSL certificate obtained and configured"
+                    
+                    # Test auto-renewal
+                    if confirm "Test SSL certificate auto-renewal"; then
+                        certbot renew --dry-run
+                        print_success "Auto-renewal test completed"
+                    fi
+                else
+                    print_error "Failed to obtain SSL certificate"
+                    print_info "You can run 'certbot --nginx -d $DOMAIN' manually later"
+                fi
+            else
+                print_warning "Skipping SSL certificate generation"
+                print_info "You can run 'certbot --nginx -d $DOMAIN' manually later"
+            fi
+        else
+            print_warning "Skipping SSL certificate generation"
+        fi
+    else
+        print_warning "Skipping SSL setup"
+    fi
+}
+
+###############################################################################
+# Step 11: Set File Permissions
+###############################################################################
+
+step_set_permissions() {
+    print_header "Step 11: Set File Permissions"
+    
+    if confirm "Set proper file permissions for project directory"; then
+        print_info "Setting file permissions..."
+        
+        # Set ownership
+        chown -R "$SERVICE_USER:$SERVICE_GROUP" "$PROJECT_DIR"
+        
+        # Set directory permissions
+        find "$PROJECT_DIR" -type d -exec chmod 755 {} \;
+        
+        # Set file permissions
+        find "$PROJECT_DIR" -type f -exec chmod 644 {} \;
+        
+        # Make manage.py executable
+        chmod +x "$PROJECT_DIR/manage.py"
+        
+        # Protect .env file
+        chmod 600 "$PROJECT_DIR/.env"
+        
+        # Static files
+        if [ -d "$PROJECT_DIR/staticfiles" ]; then
+            chown -R "$SERVICE_USER:$SERVICE_GROUP" "$PROJECT_DIR/staticfiles"
+            chmod -R 755 "$PROJECT_DIR/staticfiles"
+        fi
+        
+        # Media files
+        if [ -d "$PROJECT_DIR/media" ]; then
+            chown -R "$SERVICE_USER:$SERVICE_GROUP" "$PROJECT_DIR/media"
+            chmod -R 775 "$PROJECT_DIR/media"
+        fi
+        
+        # Logs directory
+        mkdir -p "$PROJECT_DIR/logs"
+        chown "$SERVICE_USER:$SERVICE_GROUP" "$PROJECT_DIR/logs"
+        chmod 755 "$PROJECT_DIR/logs"
+        
+        print_success "File permissions set"
+    else
+        print_warning "Skipping permission setup"
+    fi
+}
+
+###############################################################################
+# Step 12: Configure SELinux (CentOS Specific)
+###############################################################################
+
+step_configure_selinux() {
+    print_header "Step 12: Configure SELinux (CentOS Specific)"
+    
+    if [ -f /usr/sbin/getenforce ]; then
+        SELINUX_STATUS=$(getenforce)
+        print_info "Current SELinux status: $SELINUX_STATUS"
+        
+        if [ "$SELINUX_STATUS" != "Disabled" ]; then
+            if confirm "Configure SELinux for Nginx and Gunicorn"; then
+                print_info "Configuring SELinux..."
+                
+                # Allow Nginx to connect to network
+                setsebool -P httpd_can_network_connect 1
+                
+                # Set context for static files
+                if [ -d "$PROJECT_DIR/staticfiles" ]; then
+                    semanage fcontext -a -t httpd_sys_content_t "$PROJECT_DIR/staticfiles(/.*)?" 2>/dev/null || true
+                    restorecon -Rv "$PROJECT_DIR/staticfiles"
+                fi
+                
+                # Set context for media files
+                if [ -d "$PROJECT_DIR/media" ]; then
+                    semanage fcontext -a -t httpd_sys_rw_content_t "$PROJECT_DIR/media(/.*)?" 2>/dev/null || true
+                    restorecon -Rv "$PROJECT_DIR/media"
+                fi
+                
+                print_success "SELinux configured"
+                print_info "If you encounter permission issues, check SELinux logs: sudo ausearch -m avc -ts recent"
+            else
+                print_warning "Skipping SELinux configuration"
+            fi
+        else
+            print_info "SELinux is disabled, skipping configuration"
+        fi
+    else
+        print_info "SELinux not installed, skipping configuration"
+    fi
+}
+
+###############################################################################
+# Step 13: Start Services
+###############################################################################
+
+step_start_services() {
+    print_header "Step 13: Start Services"
+    
+    if confirm "Start and enable Nginx service"; then
+        systemctl start nginx
+        systemctl enable nginx
+        systemctl status nginx --no-pager -l
+        print_success "Nginx started and enabled"
+    fi
+    
+    if confirm "Start Django application service (Gunicorn)"; then
+        systemctl start cubase-macros-shop.service
+        systemctl status cubase-macros-shop.service --no-pager -l
+        print_success "Django application service started"
+    fi
+}
+
+###############################################################################
+# Step 14: Create Superuser (Optional)
+###############################################################################
+
+step_create_superuser() {
+    print_header "Step 14: Create Django Superuser (Optional)"
+    
+    if confirm "Create Django superuser account"; then
+        cd "$PROJECT_DIR"
+        "$VENV_DIR/bin/python" manage.py createsuperuser
+        print_success "Superuser creation completed"
+    else
+        print_info "Skipping superuser creation"
+        print_info "You can create one later with: python manage.py createsuperuser"
+    fi
+}
+
+###############################################################################
+# Main Execution
+###############################################################################
+
+main() {
+    print_header "Cubase Macros Hub - Production Deployment Script"
+    print_info "This script will guide you through the production deployment process"
+    print_info "Make sure you have the .env file ready with all necessary configuration"
+    echo ""
+    
+    # Check if running as root
+    check_root
+    
+    # Get project directory
+    if [ -z "$PROJECT_DIR" ]; then
+        read -p "Enter project directory path (e.g., /home/user/cubase-macros-shop/cubase-macros-shop): " PROJECT_DIR
+    fi
+    
+    # Validate project directory
+    if [ ! -d "$PROJECT_DIR" ]; then
+        print_error "Project directory not found: $PROJECT_DIR"
+        exit 1
+    fi
+    
+    PROJECT_DIR=$(realpath "$PROJECT_DIR")
+    print_success "Project directory: $PROJECT_DIR"
+    
+    # Check for .env file
+    check_env_file
+    
+    # Get virtual environment directory
+    read -p "Enter virtual environment directory (default: $PROJECT_DIR/venv): " VENV_INPUT
+    VENV_DIR="${VENV_INPUT:-$PROJECT_DIR/venv}"
+    VENV_DIR=$(realpath "$VENV_DIR" 2>/dev/null || echo "$VENV_DIR")
+    
+    # Get domain
+    read -p "Enter domain name (default: $DOMAIN): " DOMAIN_INPUT
+    DOMAIN="${DOMAIN_INPUT:-$DOMAIN}"
+    
+    # Get number of workers
+    read -p "Enter number of Gunicorn workers (default: $GUNICORN_WORKERS): " WORKERS_INPUT
+    GUNICORN_WORKERS="${WORKERS_INPUT:-$GUNICORN_WORKERS}"
+    
+    echo ""
+    print_info "Configuration Summary:"
+    echo "  Project Directory: $PROJECT_DIR"
+    echo "  Virtual Environment: $VENV_DIR"
+    echo "  Domain: $DOMAIN"
+    echo "  Gunicorn Workers: $GUNICORN_WORKERS"
+    echo "  Service User: $SERVICE_USER"
+    echo ""
+    
+    if ! confirm "Continue with deployment using these settings"; then
+        print_info "Deployment cancelled"
+        exit 0
+    fi
+    
+    # Execute deployment steps
+    step_system_update
+    step_install_dependencies
+    step_configure_firewall
+    step_setup_venv
+    step_install_python_deps
+    step_run_migrations
+    step_collect_static
+    step_create_systemd_service
+    step_configure_nginx
+    step_setup_ssl
+    step_set_permissions
+    step_configure_selinux
+    step_start_services
+    step_create_superuser
+    
+    # Final summary
+    print_header "Deployment Complete!"
+    print_success "Your application should now be running!"
+    echo ""
+    print_info "Next steps:"
+    echo "  1. Visit https://$DOMAIN to verify the application"
+    echo "  2. Check service status: sudo systemctl status cubase-macros-shop.service"
+    echo "  3. Check Nginx status: sudo systemctl status nginx"
+    echo "  4. View application logs: sudo tail -f /var/log/gunicorn/error.log"
+    echo "  5. View Nginx logs: sudo tail -f /var/log/nginx/error.log"
+    echo ""
+    print_info "Useful commands:"
+    echo "  Restart application: sudo systemctl restart cubase-macros-shop.service"
+    echo "  Restart Nginx: sudo systemctl restart nginx"
+    echo "  View service logs: sudo journalctl -u cubase-macros-shop.service -f"
+    echo ""
+}
+
+# Run main function
+main
+
