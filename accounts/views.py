@@ -49,10 +49,10 @@ def profile(request):
         favorited_by__user=request.user
     ).select_related('category', 'keycommands_file__user').order_by('-favorited_by__created_at')
     
-    # Get user's public macros
+    # Get user's public macros (is_private=False means public)
     public_macros = Macro.objects.filter(
         keycommands_file__user=request.user,
-        is_public=True
+        is_private=False
     ).select_related('category').order_by('-created_at')
     
     # Paginate results
@@ -112,16 +112,16 @@ def public_profile(request, username):
     user = get_object_or_404(User, username=username)
     user_profile = get_object_or_404(UserProfile, user=user)
     
-    # Get user's public key commands files
+    # Get user's public key commands files (is_private=False means public)
     public_keycommands = KeyCommandsFile.objects.filter(
         user=user, 
-        is_public=True
+        is_private=False
     ).order_by('-created_at')
     
-    # Get user's public macros
+    # Get user's public macros (is_private=False means public)
     public_macros = Macro.objects.filter(
         keycommands_file__user=user,
-        is_public=True
+        is_private=False
     ).select_related('category', 'keycommands_file').order_by('-created_at')
     
     # Paginate results
@@ -163,14 +163,14 @@ def dashboard(request):
     total_uploads = KeyCommandsFile.objects.filter(user=request.user).count()
     total_public_macros = Macro.objects.filter(
         keycommands_file__user=request.user,
-        is_public=True
+        is_private=False
     ).count()
     total_favorites = MacroFavorite.objects.filter(user=request.user).count()
     
-    # Get popular macros from user
+    # Get popular macros from user (is_private=False means public)
     popular_macros = Macro.objects.filter(
         keycommands_file__user=request.user,
-        is_public=True
+        is_private=False
     ).order_by('-view_count', '-download_count')[:5]
     
     context = {

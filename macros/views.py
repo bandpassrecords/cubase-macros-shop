@@ -10,6 +10,7 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 import json
 import logging
+import xml.etree.ElementTree as ET
 
 from .models import (
     KeyCommandsFile, Macro, MacroCategory, MacroVote, MacroFavorite, 
@@ -28,8 +29,8 @@ def macro_list(request):
     """Public macro listing with search and filtering"""
     form = MacroSearchForm(request.GET or None)
     
-    # Start with public macros
-    macros = Macro.objects.filter(is_public=True).select_related(
+    # Start with public macros (is_private=False means public)
+    macros = Macro.objects.filter(is_private=False).select_related(
         'category', 'keycommands_file__user', 'keycommands_file__cubase_version'
     ).annotate(
         avg_rating=Avg('votes__rating'),
@@ -83,7 +84,7 @@ def macro_list(request):
     
     # Get popular categories for sidebar
     popular_categories = MacroCategory.objects.annotate(
-        macro_count=Count('macro', filter=Q(macro__is_public=True))
+        macro_count=Count('macro', filter=Q(macro__is_private=False))
     ).filter(macro_count__gt=0).order_by('-macro_count')[:10]
     
     context = {
@@ -105,8 +106,8 @@ def macro_detail(request, macro_id):
         id=macro_id
     )
     
-    # Check permissions - allow public macros or private macros owned by the user
-    if not macro.is_public and (not request.user.is_authenticated or macro.keycommands_file.user != request.user):
+    # Check permissions - allow public macros (is_private=False) or private macros owned by the user
+    if macro.is_private and (not request.user.is_authenticated or macro.keycommands_file.user != request.user):
         raise Http404("Macro not found")
     
     # Increment view count
@@ -138,7 +139,7 @@ def macro_detail(request, macro_id):
     # Get related macros (same category)
     related_macros = Macro.objects.filter(
         category=macro.category,
-        is_public=True
+        is_private=False
     ).exclude(id=macro.id).annotate(
         avg_rating=Avg('votes__rating')
     ).order_by('-avg_rating', '-view_count')[:5]
@@ -157,247 +158,261 @@ def macro_detail(request, macro_id):
 
 @login_required
 def upload_keycommands(request):
-    """Upload and parse Key Commands file with improved error handling for new macro format"""
-    print(f"\n🔍 DEBUG: upload_keycommands called - Method: {request.method}")
-    print(f"🔍 DEBUG: User: {request.user} (authenticated: {request.user.is_authenticated})")
-    
+    """Upload and parse Macros file (KeyCommands.xml) in memory - show selection page instead of saving file"""
     if request.method == 'POST':
-        print(f"🔍 DEBUG: POST request received")
-        print(f"🔍 DEBUG: POST data keys: {list(request.POST.keys())}")
-        print(f"🔍 DEBUG: FILES data keys: {list(request.FILES.keys())}")
-        
         form = KeyCommandsFileForm(request.POST, request.FILES)
-        print(f"🔍 DEBUG: Form created, checking validity...")
         
         if form.is_valid():
-            print(f"🔍 DEBUG: ✅ Form is valid!")
-            print(f"🔍 DEBUG: Form cleaned_data: {form.cleaned_data}")
-            
-            keycommands_file = None
             try:
-                with transaction.atomic():
-                    print(f"🔍 DEBUG: Starting database transaction...")
-                    
-                    # Save the file first
-                    keycommands_file = form.save(commit=False)
-                    keycommands_file.user = request.user
-                    keycommands_file.save()
-                    
-                    print(f"🔍 DEBUG: ✅ File saved to database - ID: {keycommands_file.id}")
-                    print(f"🔍 DEBUG: File path: {keycommands_file.file.path}")
-                    print(f"🔍 DEBUG: File name: {keycommands_file.file.name}")
-                    print(f"🔍 DEBUG: File size: {keycommands_file.file.size} bytes")
-                    
-                    logger.info(f"Starting to parse Key Commands file: {keycommands_file.file.name}")
-                    
-                    # Parse the uploaded file
-                    file_path = keycommands_file.file.path
-                    print(f"🔍 DEBUG: Creating parser for file: {file_path}")
-                    
-                    parser = KeyCommandsParser(file_path)
-                    print(f"🔍 DEBUG: Parser created, starting to parse...")
-                    
-                    categories_data = parser.parse()
-                    print(f"🔍 DEBUG: ✅ Parsing completed!")
-                    print(f"🔍 DEBUG: Found {len(categories_data)} categories")
-                    for cat_name, macros in categories_data.items():
-                        print(f"🔍 DEBUG:   - {cat_name}: {len(macros)} macros")
-                    
-                    # Validate parsed data
-                    if not categories_data:
-                        print(f"🔍 DEBUG: ❌ No categories data found!")
-                        raise ValueError("No macros found in the uploaded file")
-                    
-                    total_macros = sum(len(macros) for macros in categories_data.values())
-                    print(f"🔍 DEBUG: Total macros to process: {total_macros}")
-                    
-                    logger.info(f"Found {total_macros} macros in {len(categories_data)} categories")
-                    
-                    # Create categories and macros
-                    created_macros = 0
-                    updated_macros = 0
-                    skipped_macros = 0
-                    
-                    print(f"🔍 DEBUG: Starting to create categories and macros...")
-                    
-                    for category_name, macros in categories_data.items():
-                        print(f"🔍 DEBUG: Processing category: {category_name} ({len(macros)} macros)")
-                        
-                        # Get or create category
-                        category, category_created = MacroCategory.objects.get_or_create(
-                            name=category_name
-                        )
-                        
-                        if category_created:
-                            print(f"🔍 DEBUG: ✅ Created new category: {category_name}")
-                            logger.info(f"Created new category: {category_name}")
-                        else:
-                            print(f"🔍 DEBUG: ♻️ Using existing category: {category_name}")
-                        
-                        # Create macros
-                        for i, macro_data in enumerate(macros):
-                            print(f"🔍 DEBUG:   Processing macro {i+1}/{len(macros)}: {macro_data.get('name', 'UNNAMED')}")
-                            
-                            try:
-                                # Validate macro data
-                                if not macro_data.get('name'):
-                                    print(f"🔍 DEBUG:   ❌ Skipping macro with no name")
-                                    logger.warning(f"Skipping macro with no name in category {category_name}")
-                                    skipped_macros += 1
-                                    continue
-                                
-                                # Prepare key binding string
-                                key_bindings = macro_data.get('key_bindings', [])
-                                key_binding = ', '.join(key_bindings) if key_bindings else ''
-                                
-                                # Prepare commands data
-                                commands = macro_data.get('commands', [])
-                                description = macro_data.get('description', '')
-                                
-                                print(f"🔍 DEBUG:   Macro details:")
-                                print(f"🔍 DEBUG:     - Name: {macro_data['name']}")
-                                print(f"🔍 DEBUG:     - Description: {description}")
-                                print(f"🔍 DEBUG:     - Key bindings: {key_bindings}")
-                                print(f"🔍 DEBUG:     - Commands count: {len(commands)}")
-                                
-                                # If no description provided, generate one from commands
-                                if not description and commands:
-                                    command_names = [cmd.get('name', '') for cmd in commands if cmd.get('name')]
-                                    if command_names:
-                                        if len(command_names) <= 3:
-                                            description = f"Executes: {', '.join(command_names)}"
-                                        else:
-                                            description = f"Executes: {', '.join(command_names[:3])} and {len(command_names) - 3} more commands"
-                                    print(f"🔍 DEBUG:     - Generated description: {description}")
-                                
-                                # Create or update macro
-                                print(f"🔍 DEBUG:   Creating/updating macro in database...")
-                                macro, created = Macro.objects.update_or_create(
-                                    keycommands_file=keycommands_file,
-                                    name=macro_data['name'],
-                                    defaults={
-                                        'category': category,
-                                        'description': description,
-                                        'key_binding': key_binding,
-                                        'commands_json': commands,
-                                        'xml_snippet': macro_data.get('xml_snippet', ''),
-                                        'is_public': keycommands_file.is_public,
-                                    }
-                                )
-                                
-                                if created:
-                                    created_macros += 1
-                                    print(f"🔍 DEBUG:   ✅ Created macro: {macro_data['name']}")
-                                    logger.debug(f"Created macro: {macro_data['name']}")
-                                else:
-                                    updated_macros += 1
-                                    print(f"🔍 DEBUG:   ♻️ Updated macro: {macro_data['name']}")
-                                    logger.debug(f"Updated macro: {macro_data['name']}")
-                                
-                            except Exception as macro_error:
-                                print(f"🔍 DEBUG:   ❌ Error processing macro: {macro_error}")
-                                logger.warning(f"Error processing macro '{macro_data.get('name', 'unknown')}': {macro_error}")
-                                skipped_macros += 1
-                                continue
-                    
-                    print(f"🔍 DEBUG: Macro processing complete!")
-                    print(f"🔍 DEBUG: Created: {created_macros}, Updated: {updated_macros}, Skipped: {skipped_macros}")
-                    
-                    # Update user profile stats
-                    try:
-                        print(f"🔍 DEBUG: Updating user profile stats...")
-                        profile = request.user.profile
-                        profile.total_uploads = F('total_uploads') + 1
-                        profile.save(update_fields=['total_uploads'])
-                        print(f"🔍 DEBUG: ✅ User profile updated")
-                    except Exception as profile_error:
-                        print(f"🔍 DEBUG: ⚠️ Error updating user profile: {profile_error}")
-                        logger.warning(f"Error updating user profile: {profile_error}")
-                    
-                    # Create success message with details
-                    success_parts = []
-                    if created_macros > 0:
-                        success_parts.append(f"{created_macros} new macros")
-                    if updated_macros > 0:
-                        success_parts.append(f"{updated_macros} updated macros")
-                    
-                    success_message = f"Successfully uploaded Key Commands file"
-                    if success_parts:
-                        success_message += f" with {' and '.join(success_parts)}"
-                    if skipped_macros > 0:
-                        success_message += f" ({skipped_macros} macros skipped due to errors)"
-                    
-                    print(f"🔍 DEBUG: ✅ Success message: {success_message}")
-                    messages.success(request, success_message)
-                    logger.info(f"Upload completed: {created_macros} created, {updated_macros} updated, {skipped_macros} skipped")
-                    
-                    print(f"🔍 DEBUG: Redirecting to keycommands_detail page...")
-                    return redirect('macros:keycommands_detail', file_id=keycommands_file.id)
-            
+                # Get file from form but don't save it
+                uploaded_file = form.cleaned_data['file']
+                
+                # Read file content into memory
+                uploaded_file.seek(0)
+                file_content = uploaded_file.read().decode('utf-8')
+                
+                logger.info(f"Parsing Macros file (KeyCommands.xml) in memory: {uploaded_file.name}")
+                
+                # Parse the file content directly (not from disk)
+                parser = KeyCommandsParser(file_content)
+                categories_data = parser.parse()
+                
+                # Validate parsed data
+                if not categories_data:
+                    raise ValueError("No macros found in the uploaded file")
+                
+                # Flatten all macros for selection
+                all_macros = []
+                for category_name, macros in categories_data.items():
+                    for macro_data in macros:
+                        if macro_data.get('name'):  # Only include macros with names
+                            all_macros.append({
+                                'name': macro_data.get('name', ''),
+                                'category': category_name,
+                                'description': macro_data.get('description', ''),
+                                'key_bindings': macro_data.get('key_bindings', []),
+                                'commands': macro_data.get('commands', []),
+                                'xml_snippet': macro_data.get('xml_snippet', ''),
+                                'reference_snippet': macro_data.get('reference_snippet', ''),
+                            })
+                
+                if not all_macros:
+                    raise ValueError("No valid macros found in the uploaded file")
+                
+                # Store parsed data in session for the selection step
+                request.session['upload_data'] = {
+                    'name': form.cleaned_data['name'],
+                    'description': form.cleaned_data['description'],
+                    'cubase_version_id': form.cleaned_data['cubase_version'].id if form.cleaned_data['cubase_version'] else None,
+                    'is_private': form.cleaned_data.get('is_private', False),
+                    'macros': all_macros,
+                    'file_name': uploaded_file.name,
+                }
+                
+                logger.info(f"Found {len(all_macros)} macros for selection")
+                messages.success(request, f'Found {len(all_macros)} macros in your file. Please select which ones to save.')
+                
+                # Redirect to selection page
+                return redirect('macros:select_macros_upload')
+                
             except Exception as e:
-                print(f"🔍 DEBUG: ❌ EXCEPTION during upload processing: {e}")
-                print(f"🔍 DEBUG: Exception type: {type(e)}")
-                import traceback
-                print(f"🔍 DEBUG: Traceback:\n{traceback.format_exc()}")
+                logger.error(f"Error parsing Macros file (KeyCommands.xml): {e}", exc_info=True)
                 
-                logger.error(f"Error processing Key Commands file: {e}", exc_info=True)
-                
-                # Clean up the file if parsing failed
-                if keycommands_file:
-                    try:
-                        print(f"🔍 DEBUG: Cleaning up failed upload file...")
-                        keycommands_file.delete()
-                        logger.info("Cleaned up failed upload file")
-                        print(f"🔍 DEBUG: ✅ File cleanup completed")
-                    except Exception as cleanup_error:
-                        print(f"🔍 DEBUG: ❌ Error during cleanup: {cleanup_error}")
-                        logger.error(f"Error cleaning up file: {cleanup_error}")
-                
-                # Show user-friendly error message
-                if "No macros found" in str(e):
-                    error_msg = "The uploaded file doesn't contain any valid macros. Please check that your file was exported correctly from Cubase and contains a 'Macros' section."
-                    print(f"🔍 DEBUG: User error message: {error_msg}")
-                    messages.error(request, error_msg)
+                if "No macros found" in str(e) or "No valid macros" in str(e):
+                    messages.error(request, "The uploaded file doesn't contain any valid macros. Please check that your file was exported correctly from Cubase.")
                 elif "Invalid XML" in str(e) or "XML parsing error" in str(e):
-                    error_msg = "The uploaded file is not a valid XML file. Please ensure you're uploading a Key Commands file generated from Cubase."
-                    print(f"🔍 DEBUG: User error message: {error_msg}")
-                    messages.error(request, error_msg)
+                    messages.error(request, "The uploaded file is not a valid XML file. Please ensure you're uploading a Macros file (KeyCommands.xml) from Cubase.")
                 else:
-                    error_msg = f"Error processing your file: {str(e)}. Please check that your file is a valid Cubase Key Commands export."
-                    print(f"🔍 DEBUG: User error message: {error_msg}")
-                    messages.error(request, error_msg)
+                    messages.error(request, f"Error processing your file: {str(e)}")
         else:
-            print(f"🔍 DEBUG: ❌ Form is NOT valid!")
-            print(f"🔍 DEBUG: Form errors: {form.errors}")
-            print(f"🔍 DEBUG: Form non_field_errors: {form.non_field_errors()}")
-            
             # Show form validation errors
             for field, errors in form.errors.items():
                 for error in errors:
                     if field == '__all__':
-                        print(f"🔍 DEBUG: Form error (general): {error}")
                         messages.error(request, f"Form error: {error}")
                     else:
                         field_label = form.fields[field].label or field.replace('_', ' ').title()
-                        print(f"🔍 DEBUG: Form error ({field_label}): {error}")
                         messages.error(request, f"{field_label}: {error}")
     else:
-        print(f"🔍 DEBUG: GET request - displaying upload form")
         form = KeyCommandsFileForm()
     
-    print(f"🔍 DEBUG: Rendering upload template")
     return render(request, 'macros/upload_keycommands.html', {'form': form})
 
 
+@login_required
+def select_macros_upload(request):
+    """Show macro selection page after upload"""
+    # Get parsed data from session
+    upload_data = request.session.get('upload_data')
+    
+    if not upload_data:
+        messages.error(request, 'Upload session expired. Please upload your file again.')
+        return redirect('macros:upload_keycommands')
+    
+    # Add index to each macro for tracking
+    macros_with_index = []
+    for idx, macro in enumerate(upload_data['macros']):
+        macro_copy = macro.copy()
+        macro_copy['index'] = idx
+        macros_with_index.append(macro_copy)
+    
+    # Group macros by category for better display
+    macros_by_category = {}
+    for macro in macros_with_index:
+        category = macro['category'] or 'Uncategorized'
+        if category not in macros_by_category:
+            macros_by_category[category] = []
+        macros_by_category[category].append(macro)
+    
+    if request.method == 'POST':
+        # Get selected macro indices
+        selected_indices = request.POST.getlist('selected_macros')
+        
+        if not selected_indices:
+            messages.warning(request, 'Please select at least one macro to save.')
+            return render(request, 'macros/select_macros_upload.html', {
+                'upload_data': upload_data,
+                'macros_by_category': macros_by_category,
+                'total_macros': len(upload_data['macros']),
+            })
+        
+        # Store selected indices in session for the save step
+        request.session['selected_macro_indices'] = [int(idx) for idx in selected_indices]
+        
+        # Redirect to save view
+        return redirect('macros:save_selected_macros')
+    
+    context = {
+        'upload_data': upload_data,
+        'macros_by_category': macros_by_category,
+        'total_macros': len(upload_data['macros']),
+    }
+    
+    return render(request, 'macros/select_macros_upload.html', context)
+
+
+@login_required
+def save_selected_macros(request):
+    """Save only the selected macros to database (no file storage)"""
+    # Get data from session
+    upload_data = request.session.get('upload_data')
+    selected_indices = request.session.get('selected_macro_indices')
+    
+    if not upload_data or not selected_indices:
+        messages.error(request, 'Session expired. Please upload your file again.')
+        return redirect('macros:upload_keycommands')
+    
+    try:
+        with transaction.atomic():
+            # Create KeyCommandsFile without saving the file
+            keycommands_file = KeyCommandsFile(
+                user=request.user,
+                name=upload_data['name'],
+                description=upload_data['description'],
+                cubase_version_id=upload_data['cubase_version_id'],
+                is_private=upload_data.get('is_private', False),
+                file=None  # No file stored
+            )
+            keycommands_file.save()
+            
+            logger.info(f"Created KeyCommandsFile {keycommands_file.id} without file storage")
+            
+            # Get selected macros
+            selected_macros = [upload_data['macros'][idx] for idx in selected_indices if 0 <= idx < len(upload_data['macros'])]
+            
+            created_macros = 0
+            skipped_macros = 0
+            
+            # Process each selected macro
+            for macro_data in selected_macros:
+                try:
+                    if not macro_data.get('name'):
+                        skipped_macros += 1
+                        continue
+                    
+                    # Get or create category
+                    category, _ = MacroCategory.objects.get_or_create(
+                        name=macro_data.get('category', 'Uncategorized')
+                    )
+                    
+                    # Prepare key binding string
+                    key_bindings = macro_data.get('key_bindings', [])
+                    key_binding = ', '.join(key_bindings) if key_bindings else ''
+                    
+                    # Prepare commands and description
+                    commands = macro_data.get('commands', [])
+                    description = macro_data.get('description', '')
+                    
+                    # Generate description if not provided
+                    if not description and commands:
+                        command_names = [cmd.get('name', '') for cmd in commands if cmd.get('name')]
+                        if command_names:
+                            if len(command_names) <= 3:
+                                description = f"Executes: {', '.join(command_names)}"
+                            else:
+                                description = f"Executes: {', '.join(command_names[:3])} and {len(command_names) - 3} more commands"
+                    
+                    # Create macro with both XML snippets
+                    macro, created = Macro.objects.update_or_create(
+                        keycommands_file=keycommands_file,
+                        name=macro_data['name'],
+                        category=category,
+                        defaults={
+                            'description': description,
+                            'key_binding': key_binding,
+                            'commands_json': commands,
+                            'xml_snippet': macro_data.get('xml_snippet', ''),
+                            'reference_snippet': macro_data.get('reference_snippet', ''),
+                            'is_private': keycommands_file.is_private,  # Macro uses is_private, same as file's is_private
+                        }
+                    )
+                    
+                    if created:
+                        created_macros += 1
+                        logger.debug(f"Created macro: {macro_data['name']}")
+                    
+                except Exception as macro_error:
+                    logger.warning(f"Error processing macro '{macro_data.get('name', 'unknown')}': {macro_error}")
+                    skipped_macros += 1
+                    continue
+            
+            # Update user profile stats
+            try:
+                profile = request.user.profile
+                profile.total_uploads = F('total_uploads') + 1
+                profile.save(update_fields=['total_uploads'])
+            except Exception:
+                pass
+            
+            # Clear session data
+            request.session.pop('upload_data', None)
+            request.session.pop('selected_macro_indices', None)
+            
+            # Success message
+            success_message = f"Successfully saved {created_macros} macro{'s' if created_macros != 1 else ''}"
+            if skipped_macros > 0:
+                success_message += f" ({skipped_macros} skipped)"
+            
+            messages.success(request, success_message)
+            logger.info(f"Saved {created_macros} macros for file {keycommands_file.id}")
+            
+            return redirect('macros:keycommands_detail', file_id=keycommands_file.id)
+            
+    except Exception as e:
+        logger.error(f"Error saving selected macros: {e}", exc_info=True)
+        messages.error(request, f"Error saving macros: {str(e)}")
+        return redirect('macros:upload_keycommands')
+
+
 def keycommands_detail(request, file_id):
-    """View details of a Key Commands file and its macros"""
+    """View details of a Macros file and its macros"""
     keycommands_file = get_object_or_404(
         KeyCommandsFile.objects.select_related('user', 'cubase_version'),
         id=file_id
     )
     
     # Check permissions
-    if not keycommands_file.is_public and keycommands_file.user != request.user:
+    if keycommands_file.is_private and keycommands_file.user != request.user:
         raise Http404("Key Commands file not found")
     
     # Get macros from this file with pagination
@@ -418,9 +433,9 @@ def keycommands_detail(request, file_id):
     # Filter by visibility if requested
     visibility_filter = request.GET.get('visibility')
     if visibility_filter == 'public':
-        macros_list = macros_list.filter(is_public=True)
+        macros_list = macros_list.filter(is_private=False)
     elif visibility_filter == 'private':
-        macros_list = macros_list.filter(is_public=False)
+        macros_list = macros_list.filter(is_private=True)
     
     # Group macros by category for display
     macros_by_category = {}
@@ -440,8 +455,8 @@ def keycommands_detail(request, file_id):
         macro__keycommands_file=keycommands_file
     ).distinct().order_by('name')
     
-    # Count public macros
-    public_macros_count = keycommands_file.macros.filter(is_public=True).count()
+    # Count public macros (is_private=False means public)
+    public_macros_count = keycommands_file.macros.filter(is_private=False).count()
     
     # Calculate total views (sum of all macro view counts)
     total_views = keycommands_file.macros.aggregate(
@@ -456,16 +471,16 @@ def keycommands_detail(request, file_id):
             # Update file details
             name = request.POST.get('name', '').strip()
             description = request.POST.get('description', '').strip()
-            is_public = request.POST.get('is_public') == 'on'
+            is_private = request.POST.get('is_private') == 'on'
             
             if name:
                 keycommands_file.name = name
                 keycommands_file.description = description
-                keycommands_file.is_public = is_public
+                keycommands_file.is_private = is_private
                 keycommands_file.save()
                 
                 # Update macro visibility to match file visibility
-                keycommands_file.macros.update(is_public=is_public)
+                keycommands_file.macros.update(is_private=is_private)
                 
                 messages.success(request, 'File details updated successfully!')
             else:
@@ -483,9 +498,9 @@ def keycommands_detail(request, file_id):
             macro_id = request.POST.get('macro_id')
             try:
                 macro = keycommands_file.macros.get(id=macro_id)
-                macro.is_public = not macro.is_public
+                macro.is_private = not macro.is_private
                 macro.save()
-                status = "public" if macro.is_public else "private"
+                status = "private" if macro.is_private else "public"
                 messages.success(request, f'Macro "{macro.name}" is now {status}.')
             except Macro.DoesNotExist:
                 messages.error(request, 'Macro not found.')
@@ -512,7 +527,7 @@ def keycommands_detail(request, file_id):
 @require_http_methods(["POST"])
 def toggle_favorite(request, macro_id):
     """Toggle favorite status for a macro (AJAX)"""
-    macro = get_object_or_404(Macro, id=macro_id, is_public=True)
+    macro = get_object_or_404(Macro, id=macro_id, is_private=False)
     
     favorite, created = MacroFavorite.objects.get_or_create(
         user=request.user,
@@ -533,88 +548,70 @@ def toggle_favorite(request, macro_id):
 
 @login_required
 def download_keycommands(request, file_id):
-    """Download original Key Commands file"""
+    """Download Key Commands file - always generate from stored macro snippets (files are never stored)"""
     keycommands_file = get_object_or_404(KeyCommandsFile, id=file_id)
     
     # Check permissions
-    if not keycommands_file.is_public and keycommands_file.user != request.user:
+    if keycommands_file.is_private and keycommands_file.user != request.user:
         raise Http404("Key Commands file not found")
     
     # Increment download count
     KeyCommandsFile.objects.filter(id=file_id).update(download_count=F('download_count') + 1)
     
-    # Note: MacroDownload is only for individual macros, not entire files
-    # File download tracking is handled by the download_count field above
+    # Always generate XML from stored macro snippets (files are never stored)
+    macros = keycommands_file.macros.all()
+    if not macros:
+        messages.error(request, 'No macros found in this file.')
+        return redirect('macros:keycommands_detail', file_id=file_id)
     
-    # Serve file
-    response = HttpResponse(
-        keycommands_file.file.read(),
-        content_type='application/xml'
-    )
-    response['Content-Disposition'] = f'attachment; filename="{keycommands_file.name}.xml"'
+    # Convert macros to format needed for XML generation
+    macros_data = []
+    for macro in macros:
+        key_bindings = macro.key_binding.split(', ') if macro.key_binding else []
+        macros_data.append({
+            'name': macro.name,
+            'category': macro.category.name if macro.category else 'Uncategorized',
+            'key_bindings': key_bindings,
+            'description': macro.description,
+            'commands': macro.commands
+        })
     
-    return response
+    # Generate XML
+    try:
+        xml_content = create_keycommands_xml(macros_data)
+        response = HttpResponse(xml_content, content_type='application/xml')
+        response['Content-Disposition'] = f'attachment; filename="{keycommands_file.name}.xml"'
+        return response
+    except Exception as e:
+        logger.error(f"Error generating XML: {e}")
+        messages.error(request, 'Error generating download file.')
+        return redirect('macros:keycommands_detail', file_id=file_id)
 
 
 @login_required
 def download_selected_macros(request, file_id):
-    """Download Key Commands file with selected macros only"""
+    """Download Key Commands file with selected macros embedded into user's file"""
     keycommands_file = get_object_or_404(KeyCommandsFile, id=file_id)
     
     # Check permissions
-    if not keycommands_file.is_public and keycommands_file.user != request.user:
+    if keycommands_file.is_private and keycommands_file.user != request.user:
         raise Http404("Key Commands file not found")
     
     if request.method == 'POST':
+        # Step 1: Store selected macros in session and redirect to file upload
         selected_macro_ids = request.POST.getlist('selected_macros')
         
         if not selected_macro_ids:
             messages.error(request, 'Please select at least one macro.')
-            return redirect('macros:keycommands_detail', file_id=file_id)
+            return redirect('macros:download_selected_macros', file_id=file_id)
         
-        # Get selected macros
-        selected_macros = Macro.objects.filter(
-            id__in=selected_macro_ids,
-            keycommands_file=keycommands_file
-        ).select_related('category')
+        # Store selected macro IDs in session
+        request.session['download_selected_macros'] = {
+            'file_id': str(file_id),
+            'macro_ids': selected_macro_ids,
+        }
         
-        # Convert to format needed for XML generation
-        macros_data = []
-        for macro in selected_macros:
-            key_bindings = macro.key_binding.split(', ') if macro.key_binding else []
-            macros_data.append({
-                'name': macro.name,
-                'category': macro.category.name if macro.category else 'Uncategorized',
-                'key_bindings': key_bindings,
-                'description': macro.description,
-                'commands': macro.commands  # Include the actual commands from the macro
-            })
-        
-        # Generate XML
-        try:
-            xml_content = create_keycommands_xml(macros_data)
-            
-            # Create download records
-            for macro in selected_macros:
-                MacroDownload.objects.create(
-                    macro=macro,
-                    user=request.user if request.user.is_authenticated else None,
-                    ip_address=get_client_ip(request)
-                )
-                # Increment macro download count
-                Macro.objects.filter(id=macro.id).update(download_count=F('download_count') + 1)
-            
-            # Create response
-            response = HttpResponse(xml_content, content_type='application/xml')
-            filename = f"{keycommands_file.name}_selected_macros.xml"
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
-            return response
-            
-        except Exception as e:
-            logger.error(f"Error generating XML: {e}")
-            messages.error(request, 'Error generating download file.')
-            return redirect('macros:keycommands_detail', file_id=file_id)
+        return redirect('macros:upload_user_file_for_download', file_id=file_id)
     
     # GET request - show selection form
     macros = keycommands_file.macros.select_related('category').order_by('category__name', 'name')
@@ -625,6 +622,147 @@ def download_selected_macros(request, file_id):
     }
     
     return render(request, 'macros/select_macros.html', context)
+
+
+@login_required
+def upload_user_file_for_download(request, file_id):
+    """Step 2: User uploads their KeyCommands.xml file to embed selected macros"""
+    keycommands_file = get_object_or_404(KeyCommandsFile, id=file_id)
+    
+    # Check permissions
+    if keycommands_file.is_private and keycommands_file.user != request.user:
+        raise Http404("Key Commands file not found")
+    
+    # Check if we have selected macros in session
+    selected_macro_data = request.session.get('download_selected_macros')
+    if not selected_macro_data or str(file_id) != selected_macro_data.get('file_id'):
+        messages.error(request, 'Please select macros first.')
+        return redirect('macros:download_selected_macros', file_id=file_id)
+    
+    # Get selected macros info for display
+    selected_macro_ids = selected_macro_data.get('macro_ids', [])
+    selected_macros = Macro.objects.filter(
+        id__in=selected_macro_ids,
+        keycommands_file=keycommands_file
+    ).select_related('category')
+    
+    if request.method == 'POST':
+        if 'user_file' not in request.FILES:
+            messages.error(request, 'Please upload your KeyCommands.xml file.')
+            return redirect('macros:upload_user_file_for_download', file_id=file_id)
+        
+        user_file = request.FILES['user_file']
+        
+        # Validate file
+        if not user_file.name.lower().endswith('.xml'):
+            messages.error(request, 'Please upload a valid XML file.')
+            return redirect('macros:upload_user_file_for_download', file_id=file_id)
+        
+        # Read and validate XML
+        try:
+            user_file_content = user_file.read().decode('utf-8')
+            user_root = ET.fromstring(user_file_content)
+        except UnicodeDecodeError:
+            messages.error(request, 'Invalid file encoding. Please ensure the file is UTF-8 encoded.')
+            return redirect('macros:upload_user_file_for_download', file_id=file_id)
+        except ET.ParseError as e:
+            messages.error(request, f'Invalid XML file: {str(e)}')
+            return redirect('macros:upload_user_file_for_download', file_id=file_id)
+        
+        # Embed macros
+        try:
+            # Add macro definitions to Macros list
+            macros_list = user_root.find('list[@name="Macros"]')
+            if macros_list is None:
+                macros_list = ET.SubElement(user_root, "list")
+                macros_list.set("name", "Macros")
+                macros_list.set("type", "list")
+            
+            # Add macro references to Commands list
+            categories_list = user_root.find('list[@name="Categories"]')
+            commands_list = None
+            
+            if categories_list is not None:
+                # Find or create Macro category
+                macro_category_item = None
+                for item in categories_list.findall('item'):
+                    name_string = item.find('string[@name="Name"]')
+                    if name_string is not None and name_string.attrib.get('value') == "Macro":
+                        macro_category_item = item
+                        break
+                
+                if macro_category_item is None:
+                    macro_category_item = ET.SubElement(categories_list, "item")
+                    ET.SubElement(macro_category_item, "string", name="Name", value="Macro")
+                
+                commands_list = macro_category_item.find('list[@name="Commands"]')
+                if commands_list is None:
+                    commands_list = ET.SubElement(macro_category_item, "list")
+                    commands_list.set("name", "Commands")
+                    commands_list.set("type", "list")
+            
+            # Add each selected macro
+            for macro in selected_macros:
+                # Add macro definition
+                if macro.xml_snippet:
+                    try:
+                        macro_element = ET.fromstring(macro.xml_snippet)
+                        macros_list.append(macro_element)
+                    except ET.ParseError:
+                        logger.warning(f"Failed to parse XML snippet for macro {macro.name}")
+                
+                # Add macro reference to Commands list
+                if commands_list is not None:
+                    if macro.reference_snippet:
+                        try:
+                            ref_element = ET.fromstring(macro.reference_snippet)
+                            commands_list.append(ref_element)
+                        except ET.ParseError:
+                            # Fallback: create simple reference
+                            macro_ref_item = ET.SubElement(commands_list, 'item')
+                            ET.SubElement(macro_ref_item, 'string', name='Name', value=macro.name)
+                    else:
+                        # Fallback: create simple reference
+                        macro_ref_item = ET.SubElement(commands_list, 'item')
+                        ET.SubElement(macro_ref_item, 'string', name='Name', value=macro.name)
+            
+            # Generate XML string
+            xml_str = ET.tostring(user_root, encoding='unicode', method='xml')
+            xml_content = '<?xml version="1.0" encoding="utf-8"?>\n' + xml_str
+            
+            # Create download records
+            for macro in selected_macros:
+                MacroDownload.objects.create(
+                    macro=macro,
+                    user=request.user,
+                    ip_address=get_client_ip(request)
+                )
+                Macro.objects.filter(id=macro.id).update(download_count=F('download_count') + 1)
+            
+            # Clear session
+            del request.session['download_selected_macros']
+            
+            # Create response
+            response = HttpResponse(xml_content, content_type='application/xml')
+            filename = f"KeyCommands_with_macros.xml"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            messages.success(request, f'Successfully embedded {selected_macros.count()} macro(s) into your file!')
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error embedding macros: {e}", exc_info=True)
+            messages.error(request, f'Error embedding macros into your file: {str(e)}')
+            return redirect('macros:upload_user_file_for_download', file_id=file_id)
+    
+    # GET request - show file upload form
+    context = {
+        'keycommands_file': keycommands_file,
+        'selected_macros': selected_macros,
+        'selected_count': selected_macros.count(),
+    }
+    
+    return render(request, 'macros/upload_user_file_for_download.html', context)
 
 
 @login_required
@@ -673,7 +811,7 @@ def edit_macro(request, macro_id):
 
 def popular_macros(request):
     """Show most popular macros"""
-    macros = Macro.objects.filter(is_public=True).select_related(
+    macros = Macro.objects.filter(is_private=False).select_related(
         'category', 'keycommands_file__user'
     ).annotate(
         avg_rating=Avg('votes__rating'),
@@ -691,7 +829,7 @@ def popular_macros(request):
 def categories(request):
     """List all macro categories"""
     categories = MacroCategory.objects.annotate(
-        macro_count=Count('macro', filter=Q(macro__is_public=True))
+        macro_count=Count('macro', filter=Q(macro__is_private=False))
     ).filter(macro_count__gt=0).order_by('name')
     
     context = {
@@ -707,7 +845,7 @@ def category_detail(request, category_id):
     
     macros = Macro.objects.filter(
         category=category,
-        is_public=True
+        is_private=False
     ).select_related(
         'keycommands_file__user', 'keycommands_file__cubase_version'
     ).annotate(
@@ -745,7 +883,7 @@ def select_macros_for_file(request, file_id):
             # Get selected macros
             selected_macros = Macro.objects.filter(
                 id__in=selected_macro_ids,
-                is_public=True
+                is_private=False
             ).select_related('category', 'keycommands_file__user')
             
             # Generate XML with embedded macros
@@ -785,7 +923,7 @@ def select_macros_for_file(request, file_id):
     
     # Get available macros (public macros not from this user's file)
     available_macros = Macro.objects.filter(
-        is_public=True
+        is_private=False
     ).exclude(
         keycommands_file=keycommands_file
     ).select_related(
@@ -797,9 +935,9 @@ def select_macros_for_file(request, file_id):
     
     # Get categories for filtering
     categories = MacroCategory.objects.filter(
-        macro__is_public=True
+        macro__is_private=False
     ).annotate(
-        macro_count=Count('macro', filter=Q(macro__is_public=True))
+        macro_count=Count('macro', filter=Q(macro__is_private=False))
     ).filter(macro_count__gt=0).order_by('name')
     
     # Filter by category if requested

@@ -101,12 +101,12 @@
                         <!-- Visibility -->
                         <div class="mb-4">
                             <div class="form-check">
-                                {{ form.is_public }}
-                                <label class="form-check-label" for="{{ form.is_public.id_for_label }}">
-                                    <i class="fas fa-globe"></i> Make this macro public
+                                {{ form.is_private }}
+                                <label class="form-check-label" for="{{ form.is_private.id_for_label }}">
+                                    <i class="fas fa-lock"></i> Make this macro private
                                 </label>
-                                {% if form.is_public.help_text %}
-                                    <div class="form-text">{{ form.is_public.help_text }}</div>
+                                {% if form.is_private.help_text %}
+                                    <div class="form-text">{{ form.is_private.help_text }}</div>
                                 {% endif %}
                             </div>
                         </div>

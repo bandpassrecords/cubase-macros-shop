@@ -147,9 +147,11 @@
                                     </h6>
                                     
                                     <div class="mb-2">
-                                        {% if file.is_public %}
-                                            <span class="badge bg-success">Public</span>
+                                        {% if file.is_private %}
+                                            <span class="badge bg-secondary">Private</span>
                                         {% else %}
+                                            <span class="badge bg-success">Public</span>
+                                        {% endif %}
                                             <span class="badge bg-secondary">Private</span>
                                         {% endif %}
                                         

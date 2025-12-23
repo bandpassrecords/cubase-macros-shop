@@ -34,38 +34,31 @@ class Command(BaseCommand):
         )
 
     def create_cubase_versions(self):
-        """Create common Cubase versions"""
-        versions = [
-            {'version': 'Cubase 13.0.30', 'major': 13, 'minor': 0, 'patch': 30},
-            {'version': 'Cubase 13.0.20', 'major': 13, 'minor': 0, 'patch': 20},
-            {'version': 'Cubase 13.0.10', 'major': 13, 'minor': 0, 'patch': 10},
-            {'version': 'Cubase 13.0.0', 'major': 13, 'minor': 0, 'patch': 0},
-            {'version': 'Cubase 12.0.70', 'major': 12, 'minor': 0, 'patch': 70},
-            {'version': 'Cubase 12.0.60', 'major': 12, 'minor': 0, 'patch': 60},
-            {'version': 'Cubase 12.0.52', 'major': 12, 'minor': 0, 'patch': 52},
-            {'version': 'Cubase 12.0.40', 'major': 12, 'minor': 0, 'patch': 40},
-            {'version': 'Cubase 12.0.30', 'major': 12, 'minor': 0, 'patch': 30},
-            {'version': 'Cubase 12.0.20', 'major': 12, 'minor': 0, 'patch': 20},
-            {'version': 'Cubase 12.0.10', 'major': 12, 'minor': 0, 'patch': 10},
-            {'version': 'Cubase 12.0.0', 'major': 12, 'minor': 0, 'patch': 0},
-            {'version': 'Cubase 11.0.41', 'major': 11, 'minor': 0, 'patch': 41},
-            {'version': 'Cubase 11.0.40', 'major': 11, 'minor': 0, 'patch': 40},
-            {'version': 'Cubase 11.0.30', 'major': 11, 'minor': 0, 'patch': 30},
-            {'version': 'Cubase 11.0.20', 'major': 11, 'minor': 0, 'patch': 20},
-            {'version': 'Cubase 11.0.10', 'major': 11, 'minor': 0, 'patch': 10},
-            {'version': 'Cubase 11.0.0', 'major': 11, 'minor': 0, 'patch': 0},
-            {'version': 'Cubase 10.5.20', 'major': 10, 'minor': 5, 'patch': 20},
-            {'version': 'Cubase 10.5.12', 'major': 10, 'minor': 5, 'patch': 12},
-            {'version': 'Cubase 10.5.0', 'major': 10, 'minor': 5, 'patch': 0},
-            {'version': 'Cubase 10.0.60', 'major': 10, 'minor': 0, 'patch': 60},
-            {'version': 'Cubase 10.0.50', 'major': 10, 'minor': 0, 'patch': 50},
-            {'version': 'Cubase 10.0.40', 'major': 10, 'minor': 0, 'patch': 40},
-            {'version': 'Cubase 10.0.30', 'major': 10, 'minor': 0, 'patch': 30},
-            {'version': 'Cubase 10.0.20', 'major': 10, 'minor': 0, 'patch': 20},
-            {'version': 'Cubase 10.0.15', 'major': 10, 'minor': 0, 'patch': 15},
-            {'version': 'Cubase 10.0.10', 'major': 10, 'minor': 0, 'patch': 10},
-            {'version': 'Cubase 10.0.0', 'major': 10, 'minor': 0, 'patch': 0},
-        ]
+        """Create Cubase major versions from 4 to 15"""
+        # Remove "Cubase 4" if it exists (we only want "Cubase 4 or older")
+        CubaseVersion.objects.filter(version='Cubase 4').delete()
+        
+        versions = []
+        
+        # Add "Cubase 4 or older" option
+        versions.append({
+            'version': 'Cubase 4 or older',
+            'major': 4,
+            'minor': 0,
+            'patch': 0,
+        })
+        
+        # Generate major versions 5-15 (4 is covered by "4 or older")
+        for major in range(5, 16):  # 5 to 15 inclusive
+            versions.append({
+                'version': f'Cubase {major}',
+                'major': major,
+                'minor': 0,
+                'patch': 0,
+            })
+        
+        # Sort by major version (descending) to ensure proper ordering
+        versions.sort(key=lambda x: x['major'], reverse=True)
 
         for version_data in versions:
             version, created = CubaseVersion.objects.get_or_create(
@@ -78,6 +71,8 @@ class Command(BaseCommand):
             )
             if created:
                 self.stdout.write(f'  Created: {version.version}')
+            else:
+                self.stdout.write(f'  Already exists: {version.version}')
 
     def create_categories(self):
         """Create common macro categories based on the XML file"""

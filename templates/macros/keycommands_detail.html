@@ -12,7 +12,7 @@
                 <div>
                     <h1 class="h3 mb-1">{{ keycommands_file.name }}</h1>
                     <div class="d-flex gap-2 mt-2">
-                        {% if keycommands_file.is_public %}
+                        {% if not keycommands_file.is_private %}
                             <span class="badge bg-light text-dark">
                                 <i class="fas fa-globe"></i> Public
                             </span>
@@ -38,7 +38,7 @@
                     <ul class="dropdown-menu">
                         <li>
                             <a class="dropdown-item" href="{% url 'macros:download_keycommands' keycommands_file.id %}">
-                                <i class="fas fa-download"></i> Download Original
+                                <i class="fas fa-download"></i> Download All Macros
                             </a>
                         </li>
                         <li>
@@ -100,8 +100,10 @@
                                     <td>{{ keycommands_file.updated_at|date:"M d, Y" }}</td>
                                 </tr>
                                 <tr>
-                                    <td><strong>File Size:</strong></td>
-                                    <td>{{ keycommands_file.file.size|filesizeformat }}</td>
+                                    <td><strong>Storage:</strong></td>
+                                    <td>
+                                        <span class="text-muted">Only macro snippets stored (original file not saved)</span>
+                                    </td>
                                 </tr>
                             </table>
                         </div>
@@ -141,7 +143,7 @@
                         <div class="card-body">
                             <div class="d-grid gap-2">
                                 <a href="{% url 'macros:download_keycommands' keycommands_file.id %}" class="btn btn-primary">
-                                    <i class="fas fa-download"></i> Download Original File
+                                    <i class="fas fa-download"></i> Download All Macros
                                 </a>
                                 
                                 <a href="{% url 'macros:download_selected_macros' keycommands_file.id %}" class="btn btn-success">
@@ -227,10 +229,10 @@
                                                 <input type="hidden" name="action" value="toggle_macro_visibility">
                                                 <input type="hidden" name="macro_id" value="{{ macro.id }}">
                                                 <button type="submit" class="dropdown-item">
-                                                    {% if macro.is_public %}
-                                                        <i class="fas fa-eye-slash"></i> Make Private
-                                                    {% else %}
+                                                    {% if macro.is_private %}
                                                         <i class="fas fa-eye"></i> Make Public
+                                                    {% else %}
+                                                        <i class="fas fa-eye-slash"></i> Make Private
                                                     {% endif %}
                                                 </button>
                                             </form>
@@ -242,10 +244,10 @@
                             
                             <!-- Status Badges -->
                             <div class="mb-2">
-                                {% if macro.is_public %}
-                                    <span class="badge bg-success">Public</span>
-                                {% else %}
+                                {% if macro.is_private %}
                                     <span class="badge bg-secondary">Private</span>
+                                {% else %}
+                                    <span class="badge bg-success">Public</span>
                                 {% endif %}
                                 
                                 {% if macro.category %}
@@ -296,7 +298,7 @@
                                     <i class="fas fa-eye"></i> View
                                 </a>
                                 
-                                {% if user.is_authenticated and macro.is_public %}
+                                {% if user.is_authenticated and not macro.is_private %}
                                 <button class="btn btn-sm btn-outline-danger btn-favorite" data-macro-id="{{ macro.id }}">
                                     <i class="far fa-heart"></i>
                                 </button>
@@ -391,10 +393,14 @@
                     </div>
                     
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="fileIsPublic" name="is_public" {% if keycommands_file.is_public %}checked{% endif %}>
-                        <label class="form-check-label" for="fileIsPublic">
-                            Make this file public
+                        <input class="form-check-input" type="checkbox" id="fileIsPrivate" name="is_private" {% if keycommands_file.is_private %}checked{% endif %}>
+                        <label class="form-check-label" for="fileIsPrivate">
+                            <i class="fas fa-lock"></i> Make this file private
                         </label>
+                        <div class="form-text text-muted mt-1">
+                            <i class="fas fa-globe"></i> 
+                            Uncheck to make your file public (visible to all users)
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

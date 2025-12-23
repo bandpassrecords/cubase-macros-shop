@@ -27,14 +27,14 @@ class CubaseVersion(models.Model):
 
 
 class KeyCommandsFile(models.Model):
-    """Model for uploaded Key Commands XML files"""
+    """Model for uploaded Key Commands XML files - file is optional, only XML snippets are stored"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='keycommands_files')
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    file = models.FileField(upload_to=keycommands_upload_path)
+    file = models.FileField(upload_to=keycommands_upload_path, null=True, blank=True)  # Optional - file not stored
     cubase_version = models.ForeignKey(CubaseVersion, on_delete=models.SET_NULL, null=True, blank=True)
-    is_public = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=False)  # False = public, True = private
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     download_count = models.PositiveIntegerField(default=0)
@@ -73,8 +73,9 @@ class Macro(models.Model):
     description = models.TextField(blank=True)
     key_binding = models.CharField(max_length=100, blank=True)  # For storing key combinations
     commands_json = models.JSONField(default=list, blank=True)  # Store the actual commands that make up this macro
-    xml_snippet = models.TextField(blank=True)  # Store the original XML snippet for this macro
-    is_public = models.BooleanField(default=False)
+    xml_snippet = models.TextField(blank=True)  # Store the macro definition XML snippet (from <list name="Macros">)
+    reference_snippet = models.TextField(blank=True)  # Store the macro reference XML snippet (for <list name="Commands">)
+    is_private = models.BooleanField(default=True)  # True = private, False = public (default to private for safety)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -165,7 +166,7 @@ class MacroCollection(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     macros = models.ManyToManyField(Macro, related_name='collections', blank=True)
-    is_public = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=True)  # True = private, False = public (default to private for safety)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

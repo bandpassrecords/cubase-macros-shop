@@ -30,9 +30,15 @@ class KeyCommandsParser:
         """
         try:
             # Parse XML content
-            if isinstance(self.file_path_or_content, str) and self.file_path_or_content.startswith('<?xml'):
-                # It's XML content
-                self.root = ET.fromstring(self.file_path_or_content)
+            if isinstance(self.file_path_or_content, str):
+                # Check if it's XML content (starts with <?xml or <KeyCommands)
+                if self.file_path_or_content.strip().startswith('<?xml') or self.file_path_or_content.strip().startswith('<KeyCommands'):
+                    # It's XML content string
+                    self.root = ET.fromstring(self.file_path_or_content)
+                else:
+                    # Try as file path
+                    tree = ET.parse(self.file_path_or_content)
+                    self.root = tree.getroot()
             else:
                 # It's a file path
                 tree = ET.parse(self.file_path_or_content)
@@ -167,8 +173,13 @@ class KeyCommandsParser:
         if len(commands) > 3:
             description += f" and {len(commands) - 3} more"
         
-        # Capture the original XML snippet
+        # Capture the original XML snippet (macro definition)
         xml_snippet = ET.tostring(macro_item, encoding='unicode', method='xml')
+        
+        # Create the reference snippet (for Commands list)
+        reference_item = ET.Element('item')
+        ET.SubElement(reference_item, 'string', name='Name', value=macro_name)
+        reference_snippet = ET.tostring(reference_item, encoding='unicode', method='xml')
         
         macro_data = {
             'name': macro_name,
@@ -176,7 +187,8 @@ class KeyCommandsParser:
             'description': description,
             'key_bindings': [],  # Macros typically don't have direct key bindings
             'commands': commands,  # Store the actual commands for reference
-            'xml_snippet': xml_snippet  # Store the original XML snippet for embedding into other files
+            'xml_snippet': xml_snippet,  # Store the macro definition XML snippet (from <list name="Macros">)
+            'reference_snippet': reference_snippet  # Store the macro reference XML snippet (for <list name="Commands">)
         }
         
         return macro_data
@@ -198,13 +210,23 @@ class KeyCommandsParser:
         key_elem = command_item.find("string[@name='Key']")
         key_binding = key_elem.get('value', '').strip() if key_elem is not None else ''
         
+        # Create both XML snippets for traditional commands
+        command_item_xml = ET.tostring(command_item, encoding='unicode', method='xml')
+        
+        # Create reference snippet
+        reference_item = ET.Element('item')
+        ET.SubElement(reference_item, 'string', name='Name', value=command_name)
+        reference_snippet = ET.tostring(reference_item, encoding='unicode', method='xml')
+        
         # Create macro-like data structure for traditional commands
         command_data = {
             'name': command_name,
             'category': category_name,
             'description': f"Command from {category_name} category",
             'key_bindings': [key_binding] if key_binding else [],
-            'commands': []  # Traditional commands don't have sub-commands
+            'commands': [],  # Traditional commands don't have sub-commands
+            'xml_snippet': command_item_xml,  # Store the command definition
+            'reference_snippet': reference_snippet  # Store the command reference
         }
         
         return command_data
@@ -332,18 +354,32 @@ def create_keycommands_xml_with_embedded_macros(keycommands_file, selected_macro
         Generated XML content as string with embedded macros
     """
     try:
-        # Read the existing XML file
-        with open(keycommands_file.file.path, 'r', encoding='utf-8') as f:
-            existing_content = f.read()
+        # Files are never stored - always create a new XML structure from scratch
+        root = ET.Element("KeyCommands")
+        # Create Categories list structure
+        categories_list = ET.SubElement(root, "list")
+        categories_list.set("name", "Categories")
+        categories_list.set("type", "list")
         
-        # Parse the existing XML
-        root = ET.fromstring(existing_content)
+        # Create Macro category item
+        macro_category_item = ET.SubElement(categories_list, "item")
+        ET.SubElement(macro_category_item, "string", name="Name", value="Macro")
+        commands_list = ET.SubElement(macro_category_item, "list")
+        commands_list.set("name", "Commands")
+        commands_list.set("type", "list")
         
         # STEP 1: Find or create the Macros list for macro definitions
         macros_list = None
         
         # Look for existing Macros section
-        macros_list = root.findall('list[@name="Macros"]')[0]
+        existing_macros_lists = root.findall('list[@name="Macros"]')
+        if existing_macros_lists:
+            macros_list = existing_macros_lists[0]
+        else:
+            # Create Macros list if it doesn't exist
+            macros_list = ET.SubElement(root, "list")
+            macros_list.set("name", "Macros")
+            macros_list.set("type", "list")
         
         # STEP 2: Add each selected macro definition to the Macros list
         for macro in selected_macros:
@@ -374,11 +410,35 @@ def create_keycommands_xml_with_embedded_macros(keycommands_file, selected_macro
                     if commands_list is not None:
                         break
         
+        # If commands_list doesn't exist, it was created in the else block above
+        if commands_list is None and not keycommands_file.file:
+            # Find the commands_list we created
+            categories_list = root.find('list[@name="Categories"][@type="list"]')
+            if categories_list is not None:
+                for item in categories_list.findall('item'):
+                    name_string = item.find('string[@name="Name"]')
+                    if name_string is not None and name_string.attrib.get('value') == "Macro":
+                        commands_list = item.find('list[@name="Commands"][@type="list"]')
+                        if commands_list is not None:
+                            break
+        
         # STEP 5: Add simple references to each selected macro in the Commands/Macro list
+        # Use stored reference_snippet if available, otherwise generate it
         if commands_list is not None:
             for macro in selected_macros:
-                macro_ref_item = ET.SubElement(commands_list, 'item')
-                ET.SubElement(macro_ref_item, 'string', name='Name', value=macro.name)
+                if macro.reference_snippet:
+                    # Use stored reference snippet
+                    try:
+                        ref_element = ET.fromstring(macro.reference_snippet)
+                        commands_list.append(ref_element)
+                    except ET.ParseError:
+                        # Fallback: create simple reference
+                        macro_ref_item = ET.SubElement(commands_list, 'item')
+                        ET.SubElement(macro_ref_item, 'string', name='Name', value=macro.name)
+                else:
+                    # Generate reference if not stored
+                    macro_ref_item = ET.SubElement(commands_list, 'item')
+                    ET.SubElement(macro_ref_item, 'string', name='Name', value=macro.name)
         
         # Convert back to XML string
         xml_string = ET.tostring(root, encoding='unicode', method='xml')

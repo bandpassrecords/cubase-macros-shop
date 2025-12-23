@@ -18,24 +18,27 @@ class CubaseVersionAdmin(admin.ModelAdmin):
 
 @admin.register(KeyCommandsFile)
 class KeyCommandsFileAdmin(admin.ModelAdmin):
-    list_display = ['name', 'user', 'cubase_version', 'is_public', 'download_count', 'created_at']
-    list_filter = ['is_public', 'cubase_version', 'created_at']
+    list_display = ['name', 'user', 'cubase_version', 'is_private', 'download_count', 'created_at']
+    list_filter = ['is_private', 'cubase_version', 'created_at']
     search_fields = ['name', 'user__username', 'description']
     readonly_fields = ['id', 'download_count', 'created_at', 'updated_at']
     raw_id_fields = ['user']
     
     fieldsets = (
         (None, {
-            'fields': ('id', 'user', 'name', 'description', 'file')
+            'fields': ('id', 'user', 'name', 'description')
         }),
         ('Metadata', {
-            'fields': ('cubase_version', 'is_public')
+            'fields': ('cubase_version', 'is_private')
         }),
         ('Statistics', {
             'fields': ('download_count', 'created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
+    
+    # Exclude file field - files are never stored, only macro snippets are saved
+    exclude = ['file']
     
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('user', 'cubase_version')
@@ -62,10 +65,10 @@ class MacroVoteInline(admin.TabularInline):
 @admin.register(Macro)
 class MacroAdmin(admin.ModelAdmin):
     list_display = [
-        'name', 'category', 'get_user', 'is_public', 
+        'name', 'category', 'get_user', 'is_private', 
         'get_average_rating', 'vote_count', 'view_count', 'download_count'
     ]
-    list_filter = ['is_public', 'category', 'created_at', 'keycommands_file__cubase_version']
+    list_filter = ['is_private', 'category', 'created_at', 'keycommands_file__cubase_version']
     search_fields = ['name', 'description', 'keycommands_file__user__username']
     readonly_fields = [
         'id', 'view_count', 'download_count', 'created_at', 'updated_at',
@@ -79,7 +82,12 @@ class MacroAdmin(admin.ModelAdmin):
             'fields': ('id', 'keycommands_file', 'category', 'name', 'description')
         }),
         ('Settings', {
-            'fields': ('key_binding', 'is_public')
+            'fields': ('key_binding', 'is_private')
+        }),
+        ('XML Snippets', {
+            'fields': ('xml_snippet', 'reference_snippet'),
+            'classes': ('collapse',),
+            'description': 'XML snippets stored in database (not files)'
         }),
         ('Statistics', {
             'fields': ('get_average_rating', 'vote_count', 'view_count', 'download_count'),
@@ -135,8 +143,8 @@ class MacroFavoriteAdmin(admin.ModelAdmin):
 
 @admin.register(MacroCollection)
 class MacroCollectionAdmin(admin.ModelAdmin):
-    list_display = ['name', 'user', 'get_macro_count', 'is_public', 'created_at']
-    list_filter = ['is_public', 'created_at']
+    list_display = ['name', 'user', 'get_macro_count', 'is_private', 'created_at']
+    list_filter = ['is_private', 'created_at']
     search_fields = ['name', 'user__username', 'description']
     readonly_fields = ['id', 'created_at', 'updated_at']
     raw_id_fields = ['user']
@@ -147,7 +155,7 @@ class MacroCollectionAdmin(admin.ModelAdmin):
             'fields': ('id', 'user', 'name', 'description')
         }),
         ('Settings', {
-            'fields': ('is_public',)
+            'fields': ('is_private',)
         }),
         ('Macros', {
             'fields': ('macros',)

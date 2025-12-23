@@ -5,40 +5,50 @@ from .utils import KeyCommandsParser
 
 
 class KeyCommandsFileForm(forms.ModelForm):
-    """Form for uploading Key Commands XML files"""
+    """Form for uploading Macros files (KeyCommands.xml) - file is only used for parsing, never stored"""
+    
+    # File field is NOT in Meta.fields - we add it manually for upload/parsing only, never stored
+    file = forms.FileField(
+        required=True,
+        widget=forms.FileInput(attrs={
+            'class': 'form-control-file',
+            'accept': '.xml'
+        }),
+        help_text='Upload your Macros file (KeyCommands.xml). The file will be parsed and only macro snippets will be stored.'
+    )
     
     class Meta:
         model = KeyCommandsFile
-        fields = ['name', 'description', 'file', 'cubase_version', 'is_public']
+        fields = ['name', 'description', 'cubase_version', 'is_private']
+        # Note: 'file' is NOT in fields - we only use it for parsing, never store it
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Enter a name for your Key Commands file'
+                'placeholder': 'Enter a name for your Macros file'
             }),
             'description': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 4,
                 'placeholder': 'Describe your Key Commands setup (optional)'
             }),
-            'file': forms.FileInput(attrs={
-                'class': 'form-control-file',
-                'accept': '.xml'
-            }),
             'cubase_version': forms.Select(attrs={'class': 'form-control'}),
-            'is_public': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_private': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         help_texts = {
-            'name': 'Give your Key Commands file a descriptive name.',
+            'name': 'Give your Macros file a descriptive name.',
             'description': 'Optional description of what makes this setup special.',
-            'file': 'Upload your Key Commands.xml file exported from Cubase.',
             'cubase_version': 'Select the Cubase version this file was created with.',
-            'is_public': 'Allow other users to see and use macros from this file.',
+            'is_private': 'Check this box to keep your file private (only visible to you). By default, files are public.',
         }
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['cubase_version'].queryset = CubaseVersion.objects.all()
         self.fields['cubase_version'].empty_label = "Select Cubase Version"
+        
+        # Ensure is_private defaults to False (unchecked = public)
+        if not self.instance or not self.instance.pk:
+            self.fields['is_private'].initial = False
     
     def clean_file(self):
         file = self.cleaned_data.get('file')
@@ -65,14 +75,14 @@ class KeyCommandsFileForm(forms.ModelForm):
                     
                     # Check if it's a Key Commands file
                     if root.tag != 'KeyCommands':
-                        raise ValidationError("Invalid Key Commands file: Root element must be 'KeyCommands'")
+                        raise ValidationError("Invalid Macros file (KeyCommands.xml): Root element must be 'KeyCommands'")
                     
                     # Check for either Macros or Categories section (both are valid Cubase formats)
                     macros_list = root.find(".//list[@name='Macros']")
                     categories_list = root.find(".//list[@name='Categories']")
                     
                     if macros_list is None and categories_list is None:
-                        raise ValidationError("Invalid Key Commands file: No Macros or Categories section found")
+                        raise ValidationError("Invalid Macros file (KeyCommands.xml): No Macros or Categories section found")
                     
                     # Check if there are any items in whichever section exists
                     items_found = False
@@ -85,7 +95,7 @@ class KeyCommandsFileForm(forms.ModelForm):
                         items_found = len(category_items) > 0
                         
                     if not items_found:
-                        raise ValidationError("Invalid Key Commands file: No macros or categories found")
+                        raise ValidationError("Invalid Macros file (KeyCommands.xml): No macros or categories found")
                         
                 except ET.ParseError as pe:
                     raise ValidationError(f"Invalid XML format: {pe}")
@@ -105,7 +115,7 @@ class MacroForm(forms.ModelForm):
     
     class Meta:
         model = Macro
-        fields = ['name', 'description', 'key_binding', 'is_public']
+        fields = ['name', 'description', 'key_binding', 'is_private']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -120,13 +130,13 @@ class MacroForm(forms.ModelForm):
                 'class': 'form-control',
                 'placeholder': 'e.g., Ctrl+Alt+M'
             }),
-            'is_public': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_private': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         help_texts = {
             'name': 'Name of the macro/command.',
             'description': 'Optional description of what this macro does.',
             'key_binding': 'Keyboard shortcut for this macro.',
-            'is_public': 'Allow other users to discover and use this macro.',
+            'is_private': 'Check to keep this macro private (only visible to you). Uncheck to make it public.',
         }
 
 
@@ -155,7 +165,7 @@ class MacroCollectionForm(forms.ModelForm):
     
     class Meta:
         model = MacroCollection
-        fields = ['name', 'description', 'is_public']
+        fields = ['name', 'description', 'is_private']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -166,12 +176,12 @@ class MacroCollectionForm(forms.ModelForm):
                 'rows': 4,
                 'placeholder': 'Describe this collection of macros'
             }),
-            'is_public': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_private': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
         help_texts = {
             'name': 'Name for your macro collection.',
             'description': 'Describe what type of macros are in this collection.',
-            'is_public': 'Allow other users to see this collection.',
+            'is_private': 'Check to keep this collection private (only visible to you). Uncheck to make it public.',
         }
 
 

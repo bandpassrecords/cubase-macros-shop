@@ -131,14 +131,14 @@
                                 
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
-                                        {% if macro.is_public %}
-                                            <span class="badge bg-success badge-sm">Public</span>
-                                        {% else %}
+                                        {% if macro.is_private %}
                                             <span class="badge bg-secondary badge-sm">Private</span>
+                                        {% else %}
+                                            <span class="badge bg-success badge-sm">Public</span>
                                         {% endif %}
                                     </small>
                                     
-                                    {% if macro.is_public %}
+                                    {% if not macro.is_private %}
                                     <small class="text-muted">
                                         <i class="fas fa-eye"></i> {{ macro.view_count }}
                                         <i class="fas fa-download ms-1"></i> {{ macro.download_count }}

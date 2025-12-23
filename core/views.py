@@ -7,37 +7,37 @@ from accounts.models import UserProfile
 def home(request):
     """Homepage with featured content"""
     
-    # Get featured/popular macros
-    featured_macros = Macro.objects.filter(is_public=True).select_related(
+    # Get featured/popular macros (is_private=False means public)
+    featured_macros = Macro.objects.filter(is_private=False).select_related(
         'category', 'keycommands_file__user'
     ).annotate(
         avg_rating=Avg('votes__rating'),
         total_votes=Count('votes')
     ).order_by('-view_count', '-download_count')[:8]
     
-    # Get recently uploaded macros
-    recent_macros = Macro.objects.filter(is_public=True).select_related(
+    # Get recently uploaded macros (is_private=False means public)
+    recent_macros = Macro.objects.filter(is_private=False).select_related(
         'category', 'keycommands_file__user'
     ).order_by('-created_at')[:6]
     
     # Get popular categories
     popular_categories = MacroCategory.objects.annotate(
-        macro_count=Count('macro', filter=Q(macro__is_public=True))
+        macro_count=Count('macro', filter=Q(macro__is_private=False))
     ).filter(macro_count__gt=0).order_by('-macro_count')[:6]
     
     # Get some statistics
     stats = {
-        'total_macros': Macro.objects.filter(is_public=True).count(),
+        'total_macros': Macro.objects.filter(is_private=False).count(),
         'total_users': UserProfile.objects.count(),
-        'total_files': KeyCommandsFile.objects.filter(is_public=True).count(),
+        'total_files': KeyCommandsFile.objects.filter(is_private=False).count(),  # is_private=False means public
         'total_categories': MacroCategory.objects.annotate(
-            macro_count=Count('macro', filter=Q(macro__is_public=True))
+            macro_count=Count('macro', filter=Q(macro__is_private=False))
         ).filter(macro_count__gt=0).count(),
     }
     
     # Get available Cubase versions
     cubase_versions = CubaseVersion.objects.annotate(
-        file_count=Count('keycommandsfile', filter=Q(keycommandsfile__is_public=True))
+        file_count=Count('keycommandsfile', filter=Q(keycommandsfile__is_private=False))  # is_private=False means public
     ).filter(file_count__gt=0).order_by('-major_version', '-minor_version')[:5]
     
     context = {
