@@ -9,6 +9,7 @@ urlpatterns = [
     # Authentication URLs
     # Note: allauth provides its own login/signup views, but we keep these for custom views
     path('signup/', views.signup, name='signup'),
+    path('signup/email/', views.signup_email, name='signup_email'),
     # Use allauth login view instead of Django's default
     path('login/', views.CustomLoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),

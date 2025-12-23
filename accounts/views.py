@@ -17,7 +17,12 @@ class CustomLoginView(AllauthLoginView):
 
 
 def signup(request):
-    """User signup view - email only authentication"""
+    """Signup choice page - choose between Google or email registration"""
+    return render(request, 'accounts/signup.html')
+
+
+def signup_email(request):
+    """Email-only signup view"""
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
@@ -39,7 +44,7 @@ def signup(request):
     else:
         form = CustomUserCreationForm()
     
-    return render(request, 'accounts/register.html', {'form': form})
+    return render(request, 'accounts/signup_email.html', {'form': form})
 
 
 @login_required

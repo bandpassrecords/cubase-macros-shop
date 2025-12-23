@@ -19,22 +19,23 @@ class CustomUserCreationForm(UserCreationForm):
         # Remove username field
         if 'username' in self.fields:
             del self.fields['username']
-        # Add CSS classes to form fields
+        # Add CSS classes to form fields (no placeholders)
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control form-control-lg'
             if field_name == 'email':
-                field.widget.attrs['placeholder'] = 'Enter your email address'
                 field.widget.attrs['autocomplete'] = 'email'
+                field.help_text = None
             elif field_name == 'first_name':
-                field.widget.attrs['placeholder'] = 'First name (optional)'
+                field.help_text = None
             elif field_name == 'last_name':
-                field.widget.attrs['placeholder'] = 'Last name (optional)'
+                field.help_text = None
             elif field_name == 'password1':
-                field.widget.attrs['placeholder'] = 'Enter your password'
                 field.widget.attrs['autocomplete'] = 'new-password'
+                # Keep help_text for error display (template will show it only on error)
             elif field_name == 'password2':
-                field.widget.attrs['placeholder'] = 'Confirm your password'
                 field.widget.attrs['autocomplete'] = 'new-password'
+                # Remove the default help text for password2
+                field.help_text = None
     
     def save(self, commit=True):
         user = super().save(commit=False)
