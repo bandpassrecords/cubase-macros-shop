@@ -16,19 +16,19 @@ class CustomLoginView(AllauthLoginView):
     template_name = 'accounts/login.html'
 
 
-def register(request):
-    """User registration view"""
+def signup(request):
+    """User signup view - email only authentication"""
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             with transaction.atomic():
                 user = form.save()
-                username = form.cleaned_data.get('username')
-                messages.success(request, f'Account created for {username}! You can now log in.')
+                email = form.cleaned_data.get('email')
+                messages.success(request, f'Account created for {email}! You can now log in.')
                 
-                # Log the user in after successful registration
+                # Log the user in after successful signup
                 user = authenticate(
-                    username=form.cleaned_data['username'],
+                    username=form.cleaned_data['email'],  # Use email as username for authentication
                     password=form.cleaned_data['password1']
                 )
                 if user:
@@ -132,9 +132,9 @@ def edit_profile(request):
     return render(request, 'accounts/edit_profile.html', context)
 
 
-def public_profile(request, username):
-    """View public profile of a user - shows only public macros"""
-    user = get_object_or_404(User, username=username)
+def public_profile(request, slug):
+    """View public profile of a user - shows only public macros. slug is email"""
+    user = get_object_or_404(User, email=slug)
     user_profile = get_object_or_404(UserProfile, user=user)
     
     # Get user's public macros (is_private=False means public)

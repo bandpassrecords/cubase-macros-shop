@@ -19,7 +19,7 @@
                     {% endif %}
                     
                     <h1 class="h3 mb-1">{{ profile_user.profile.display_name }}</h1>
-                    <p class="text-muted mb-2">@{{ profile_user.username }}</p>
+                    <p class="text-muted mb-2">{{ profile_user.email }}</p>
                     
                     {% if profile_user == user %}
                     <a href="{% url 'accounts:edit_profile' %}" class="btn btn-outline-primary btn-sm">
@@ -314,7 +314,7 @@
                                     
                                     <div class="mb-2">
                                         <small class="text-muted">
-                                            by {{ favorite.macro.user.username }}
+                                            by {{ favorite.macro.user.profile.display_name }}
                                         </small>
                                     </div>
                                     

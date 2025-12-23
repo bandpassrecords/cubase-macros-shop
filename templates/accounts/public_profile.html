@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}{{ profile_user.username }} - Profile{% endblock %}
+{% block title %}{{ profile.public_display_name }} - Profile{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -14,7 +14,7 @@
                         <div class="col-md-8">
                             <h1 class="h3 mb-2">
                                 <i class="fas fa-user"></i> 
-                                {{ profile.display_name|default:profile_user.username }}
+                                {{ profile.public_display_name }}
                             </h1>
                             
                             {% if profile.bio %}
@@ -167,7 +167,7 @@
                     <i class="fas fa-upload"></i> Upload & Share Macros
                 </a>
                 {% else %}
-                <p class="text-muted">{{ profile_user.username }} hasn't shared any macros yet.</p>
+                <p class="text-muted">{{ profile.public_display_name }} hasn't shared any macros yet.</p>
                 {% endif %}
             </div>
             {% endif %}

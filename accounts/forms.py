@@ -5,32 +5,41 @@ from .models import UserProfile
 
 
 class CustomUserCreationForm(UserCreationForm):
-    """Custom user registration form with additional fields"""
+    """Custom user registration form with additional fields - email only, no username"""
     email = forms.EmailField(required=True, help_text="Required. Enter a valid email address.")
     first_name = forms.CharField(max_length=30, required=False, help_text="Optional.")
     last_name = forms.CharField(max_length=30, required=False, help_text="Optional.")
     
     class Meta:
         model = User
-        fields = ("username", "email", "first_name", "last_name", "password1", "password2")
+        fields = ("email", "first_name", "last_name", "password1", "password2")
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Remove username field
+        if 'username' in self.fields:
+            del self.fields['username']
         # Add CSS classes to form fields
         for field_name, field in self.fields.items():
-            field.widget.attrs['class'] = 'form-control'
+            field.widget.attrs['class'] = 'form-control form-control-lg'
             if field_name == 'email':
                 field.widget.attrs['placeholder'] = 'Enter your email address'
-            elif field_name == 'username':
-                field.widget.attrs['placeholder'] = 'Choose a username'
+                field.widget.attrs['autocomplete'] = 'email'
             elif field_name == 'first_name':
                 field.widget.attrs['placeholder'] = 'First name (optional)'
             elif field_name == 'last_name':
                 field.widget.attrs['placeholder'] = 'Last name (optional)'
+            elif field_name == 'password1':
+                field.widget.attrs['placeholder'] = 'Enter your password'
+                field.widget.attrs['autocomplete'] = 'new-password'
+            elif field_name == 'password2':
+                field.widget.attrs['placeholder'] = 'Confirm your password'
+                field.widget.attrs['autocomplete'] = 'new-password'
     
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
+        user.username = self.cleaned_data["email"]  # Set username to email for compatibility
         user.first_name = self.cleaned_data["first_name"]
         user.last_name = self.cleaned_data["last_name"]
         if commit:
@@ -71,13 +80,12 @@ class UserProfileForm(forms.ModelForm):
 
 
 class UserUpdateForm(forms.ModelForm):
-    """Form for updating basic user information"""
+    """Form for updating basic user information - email only, no username"""
     
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name']
+        fields = ['email', 'first_name', 'last_name']
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First name'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last name'}),
@@ -86,6 +94,9 @@ class UserUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['email'].required = True
+        # Remove username field if it exists
+        if 'username' in self.fields:
+            del self.fields['username']
 
 
 class CustomPasswordResetForm(PasswordResetForm):

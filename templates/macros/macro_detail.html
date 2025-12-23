@@ -53,9 +53,9 @@
                                 <tr>
                                     <td><strong>Author:</strong></td>
                                     <td>
-                                        {% if macro.user.username %}
-                                            <a href="{% url 'accounts:public_profile' macro.user.username %}">
-                                                {{ macro.user.profile.display_name|default:macro.user.username }}
+                                        {% if macro.user.email %}
+                                            <a href="{% url 'accounts:public_profile' macro.user.email %}">
+                                                {{ macro.user.profile.display_name }}
                                             </a>
                                         {% else %}
                                             {{ macro.user.profile.display_name|default:"Unknown User" }}
@@ -285,7 +285,7 @@
                                 </a>
                             </h6>
                             <small class="text-muted">
-                                by {{ related.user.username }}
+                                by {{ related.user.profile.display_name }}
                             </small>
                             {% if related.avg_rating %}
                             <div class="rating-stars mt-1">
@@ -314,14 +314,14 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        {% if macro.user.username %}
-                        <a href="{% url 'accounts:public_profile' macro.user.username %}" class="btn btn-outline-info btn-sm">
+                        {% if macro.user.email %}
+                        <a href="{% url 'accounts:public_profile' macro.user.email %}" class="btn btn-outline-info btn-sm">
                             <i class="fas fa-user"></i> View Author Profile
                         </a>
                         {% endif %}
                         
                         {% if not user.is_authenticated %}
-                        <a href="{% url 'accounts:register' %}" class="btn btn-success btn-sm">
+                        <a href="{% url 'accounts:signup' %}" class="btn btn-success btn-sm">
                             <i class="fas fa-user-plus"></i> Sign Up to Rate & Favorite
                         </a>
                         {% endif %}

@@ -26,7 +26,7 @@
                         <i class="fas fa-upload"></i> Upload Macros
                     </a>
                     {% else %}
-                    <a href="{% url 'accounts:register' %}" class="btn btn-outline-light btn-lg">
+                    <a href="{% url 'accounts:signup' %}" class="btn btn-outline-light btn-lg">
                         <i class="fas fa-user-plus"></i> Join Free
                     </a>
                     {% endif %}
@@ -68,8 +68,8 @@
                     
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <small class="text-muted">
-                            by <a href="{% url 'accounts:public_profile' macro.user.username %}" class="text-decoration-none">
-                                {{ macro.user.username }}
+                            by <a href="{% url 'accounts:public_profile' macro.user.email %}" class="text-decoration-none">
+                                {{ macro.user.profile.display_name }}
                             </a>
                         </small>
                         
@@ -104,7 +104,7 @@
                         <i class="fas fa-upload"></i> Upload Your First Macro
                     </a>
                 {% else %}
-                    <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'accounts:signup' %}" class="btn btn-primary btn-lg">
                         <i class="fas fa-user-plus"></i> Sign Up to Get Started
                     </a>
                 {% endif %}

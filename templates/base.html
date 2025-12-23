@@ -73,11 +73,11 @@
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 {% if user.profile.avatar %}
-                                    <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
+                                    <img src="{{ user.profile.avatar.url }}" alt="{{ user.email }}" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
                                 {% else %}
                                     <i class="fas fa-user-circle me-2"></i>
                                 {% endif %}
-                                <span>{{ user.username }}</span>
+                                <span>{{ user.profile.display_name }}</span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{% url 'accounts:dashboard' %}">
@@ -108,7 +108,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="btn btn-primary ms-2" href="{% url 'accounts:register' %}">
+                            <a class="btn btn-primary ms-2" href="{% url 'accounts:signup' %}">
                                 <i class="fas fa-user-plus"></i> <span>Sign Up</span>
                             </a>
                         </li>
@@ -180,7 +180,7 @@
                             <li class="mb-2"><a href="{% url 'macros:upload_keycommands' %}">Upload</a></li>
                         {% else %}
                             <li class="mb-2"><a href="{% url 'accounts:login' %}">Login</a></li>
-                            <li class="mb-2"><a href="{% url 'accounts:register' %}">Register</a></li>
+                            <li class="mb-2"><a href="{% url 'accounts:signup' %}">Sign up</a></li>
                         {% endif %}
                     </ul>
                 </div>

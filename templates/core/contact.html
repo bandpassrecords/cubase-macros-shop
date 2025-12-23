@@ -32,7 +32,7 @@
                                             <i class="fas fa-user me-1"></i>Your Name <span class="text-danger">*</span>
                                         </label>
                                         <input type="text" class="form-control" id="name" name="name" 
-                                               value="{% if user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% endif %}" 
+                                               value="{% if user.is_authenticated %}{{ user.get_full_name|default:user.profile.display_name }}{% endif %}" 
                                                required>
                                     </div>
                                     <div class="col-md-6">

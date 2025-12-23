@@ -86,9 +86,9 @@
                                 <tr>
                                     <td><strong>Author:</strong></td>
                                     <td>
-                                        {% if keycommands_file.user.username %}
-                                            <a href="{% url 'accounts:public_profile' keycommands_file.user.username %}">
-                                                {{ keycommands_file.user.profile.display_name|default:keycommands_file.user.username }}
+                                        {% if keycommands_file.user.email %}
+                                            <a href="{% url 'accounts:public_profile' keycommands_file.user.email %}">
+                                                {{ keycommands_file.user.profile.display_name }}
                                             </a>
                                         {% else %}
                                             {{ keycommands_file.user.profile.display_name|default:"Unknown User" }}
@@ -163,7 +163,7 @@
                                 {% if not user.is_authenticated %}
                                 <div class="alert alert-info small mb-0">
                                     <i class="fas fa-info-circle"></i>
-                                    <a href="{% url 'accounts:register' %}" class="text-decoration-none">Sign up</a> to customize downloads
+                                    <a href="{% url 'accounts:signup' %}" class="text-decoration-none">Sign up</a> to customize downloads
                                 </div>
                                 {% endif %}
                             </div>

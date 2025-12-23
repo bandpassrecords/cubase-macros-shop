@@ -33,14 +33,15 @@ class UserProfile(models.Model):
         verbose_name_plural = "User Profiles"
     
     def __str__(self):
-        return f"{self.user.username}'s Profile"
+        return f"{self.user.email}'s Profile"
     
     @property
     def display_name(self):
         """Return the display name for the user"""
         if self.show_real_name and (self.user.first_name or self.user.last_name):
             return f"{self.user.first_name} {self.user.last_name}".strip()
-        return self.user.username
+        # Use email prefix as fallback
+        return self.user.email.split('@')[0] if self.user.email else 'User'
 
 
 @receiver(post_save, sender=User)

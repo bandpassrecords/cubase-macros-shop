@@ -40,7 +40,7 @@ class UserProfileAdmin(admin.ModelAdmin):
         'total_uploads', 'total_downloads', 'created_at'
     ]
     list_filter = ['show_email', 'show_real_name', 'email_notifications', 'newsletter_subscription', 'created_at']
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'bio', 'location']
+    search_fields = ['user__email', 'user__first_name', 'user__last_name', 'bio', 'location']
     readonly_fields = ['created_at', 'updated_at', 'total_uploads', 'total_downloads']
     raw_id_fields = ['user']
     

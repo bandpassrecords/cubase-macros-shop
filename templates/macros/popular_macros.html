@@ -93,9 +93,9 @@
                     <div class="mb-2">
                         
                         <small class="text-muted ms-2">
-                            by {% if macro.user.username %}
-                                <a href="{% url 'accounts:public_profile' macro.user.username %}" class="text-decoration-none">
-                                    {{ macro.user.username }}
+                            by {% if macro.user.email %}
+                                <a href="{% url 'accounts:public_profile' macro.user.email %}" class="text-decoration-none">
+                                    {{ macro.user.profile.display_name }}
                                 </a>
                             {% else %}
                                 Unknown User

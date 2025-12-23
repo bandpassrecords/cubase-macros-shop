@@ -121,9 +121,9 @@
                         <!-- Author -->
                         <div class="mb-2">
                             <small class="text-muted">
-                                by {% if macro.keycommands_file.user.username %}
-                                    <a href="{% url 'accounts:public_profile' macro.keycommands_file.user.username %}" class="text-decoration-none">
-                                        {{ macro.keycommands_file.user.username }}
+                                by {% if macro.user.email %}
+                                    <a href="{% url 'accounts:public_profile' macro.user.email %}" class="text-decoration-none">
+                                        {{ macro.user.profile.display_name }}
                                     </a>
                                 {% else %}
                                     Unknown User
