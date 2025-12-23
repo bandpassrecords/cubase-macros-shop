@@ -270,3 +270,4 @@ X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
 # Password Reset Token
 PASSWORD_RESET_TIMEOUT = 86400  # 24 hours (in seconds)
 
+

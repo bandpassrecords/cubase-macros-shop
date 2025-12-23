@@ -197,3 +197,4 @@ cat cubase_macros_shop/settings.py.old
 5. ✅ **Document environment-specific settings** in each file
 6. ✅ **Use environment variables** for sensitive data
 
+

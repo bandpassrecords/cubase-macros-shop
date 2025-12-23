@@ -5,9 +5,15 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import HttpResponseNotFound
+
+# Handler for favicon.ico to prevent 404 errors
+def favicon_handler(request):
+    return HttpResponseNotFound()
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('favicon.ico', favicon_handler),  # Handle favicon requests
     path('', include('core.urls')),
     path('accounts/', include('accounts.urls')),
     path('accounts/', include('allauth.urls')),  # Allauth URLs (login, signup, etc.)

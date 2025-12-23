@@ -13,6 +13,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     {% load static %}
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -31,28 +33,28 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'core:home' %}">
+                        <a class="nav-link {% if request.resolver_match and request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'core:home' %}">
                             <i class="fas fa-home"></i> <span>Home</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'macro_list' %}active{% endif %}" href="{% url 'macros:macro_list' %}">
+                        <a class="nav-link {% if request.resolver_match and request.resolver_match.url_name == 'macro_list' %}active{% endif %}" href="{% url 'macros:macro_list' %}">
                             <i class="fas fa-search"></i> <span>Browse</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'popular_macros' %}active{% endif %}" href="{% url 'macros:popular_macros' %}">
+                        <a class="nav-link {% if request.resolver_match and request.resolver_match.url_name == 'popular_macros' %}active{% endif %}" href="{% url 'macros:popular_macros' %}">
                             <i class="fas fa-fire"></i> <span>Popular</span>
                         </a>
                     </li>
                     {% if user.is_authenticated %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'upload_keycommands' %}active{% endif %}" href="{% url 'macros:upload_keycommands' %}">
+                        <a class="nav-link {% if request.resolver_match and request.resolver_match.url_name == 'upload_keycommands' %}active{% endif %}" href="{% url 'macros:upload_keycommands' %}">
                             <i class="fas fa-upload"></i> <span>Upload</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'view_cart' %}active{% endif %}" href="{% url 'macros:view_cart' %}">
+                        <a class="nav-link {% if request.resolver_match and request.resolver_match.url_name == 'view_cart' %}active{% endif %}" href="{% url 'macros:view_cart' %}">
                             <i class="fas fa-shopping-cart"></i> <span>Cart</span>
                             {% if cart_count > 0 %}
                             <span class="badge bg-primary ms-1" id="nav-cart-badge">{{ cart_count }}</span>

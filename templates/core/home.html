@@ -11,7 +11,7 @@
             <div class="col-lg-7 hero-content">
                 <h1 class="hero-title">
                     Share & Discover<br>
-                    <spanpython manage.py migrate>Cubase Macros</span>
+                    <span>Cubase Macros</span>
                 </h1>
                 <p class="hero-subtitle">
                     Enhance your music production workflow with powerful automation. 
@@ -193,7 +193,7 @@
                 <div class="card text-center">
                     <div class="card-body py-3">
                         <h6 class="card-title mb-1">{{ version.version }}</h6>
-                        <small class="text-muted">{{ version.file_count }} files</small>
+                        <small class="text-muted">{{ version.macro_count }} macro{{ version.macro_count|pluralize }}</small>
                     </div>
                 </div>
             </div>

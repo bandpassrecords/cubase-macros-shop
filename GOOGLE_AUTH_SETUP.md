@@ -216,3 +216,4 @@ Example for GitHub:
 
 Then add `'allauth.socialaccount.providers.github'` to `INSTALLED_APPS`.
 
+
