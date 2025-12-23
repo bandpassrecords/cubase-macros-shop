@@ -258,6 +258,12 @@ step_create_systemd_service() {
         chown "$SERVICE_USER:$SERVICE_GROUP" /var/log/gunicorn
         chmod 755 /var/log/gunicorn
         
+        # Ensure socket directory exists and is accessible
+        # /run is typically tmpfs, but we ensure it's there
+        if [ ! -d "/run" ]; then
+            mkdir -p /run
+        fi
+        
         # Create service file
         SERVICE_FILE="/etc/systemd/system/cubase-macros-shop.service"
         
@@ -273,6 +279,8 @@ WorkingDirectory=$PROJECT_DIR
 Environment="PATH=$VENV_DIR/bin"
 Environment="DJANGO_SETTINGS_MODULE=cubase_macros_shop.settings.production"
 EnvironmentFile=$PROJECT_DIR/.env
+RuntimeDirectory=gunicorn
+RuntimeDirectoryMode=0755
 ExecStart=$VENV_DIR/bin/gunicorn \\
     --workers $GUNICORN_WORKERS \\
     --bind unix:/run/gunicorn.sock \\
@@ -288,6 +296,14 @@ WantedBy=multi-user.target
 EOF
         
         print_success "Systemd service file created at $SERVICE_FILE"
+        
+        # Verify .env file is accessible before proceeding
+        if [ ! -r "$PROJECT_DIR/.env" ]; then
+            print_error ".env file is not readable by current user"
+            print_info "Setting ownership of .env file..."
+            chown "$SERVICE_USER:$SERVICE_GROUP" "$PROJECT_DIR/.env"
+            chmod 600 "$PROJECT_DIR/.env"
+        fi
         
         # Reload systemd
         systemctl daemon-reload
@@ -419,20 +435,30 @@ step_set_permissions() {
     if confirm "Set proper file permissions for project directory"; then
         print_info "Setting file permissions..."
         
-        # Set ownership
+        # Set ownership of project directory
         chown -R "$SERVICE_USER:$SERVICE_GROUP" "$PROJECT_DIR"
         
-        # Set directory permissions
+        # Set directory permissions (readable and executable by owner and group)
         find "$PROJECT_DIR" -type d -exec chmod 755 {} \;
         
-        # Set file permissions
+        # Set file permissions (readable by owner and group)
         find "$PROJECT_DIR" -type f -exec chmod 644 {} \;
         
         # Make manage.py executable
         chmod +x "$PROJECT_DIR/manage.py"
         
-        # Protect .env file
+        # .env file: owned by nginx, readable only by owner (600)
+        chown "$SERVICE_USER:$SERVICE_GROUP" "$PROJECT_DIR/.env"
         chmod 600 "$PROJECT_DIR/.env"
+        
+        # Virtual environment: ensure nginx can access it
+        if [ -d "$VENV_DIR" ]; then
+            chown -R "$SERVICE_USER:$SERVICE_GROUP" "$VENV_DIR"
+            find "$VENV_DIR" -type d -exec chmod 755 {} \;
+            find "$VENV_DIR" -type f -exec chmod 644 {} \;
+            # Make Python and scripts executable
+            find "$VENV_DIR/bin" -type f -exec chmod 755 {} \;
+        fi
         
         # Static files
         if [ -d "$PROJECT_DIR/staticfiles" ]; then
@@ -451,7 +477,16 @@ step_set_permissions() {
         chown "$SERVICE_USER:$SERVICE_GROUP" "$PROJECT_DIR/logs"
         chmod 755 "$PROJECT_DIR/logs"
         
+        # Socket directory: ensure /run is accessible and create socket with proper permissions
+        # The socket will be created by gunicorn, but we need to ensure the directory is accessible
+        if [ ! -d "/run" ]; then
+            mkdir -p /run
+        fi
+        # Note: /run is typically a tmpfs, so we can't chown it, but gunicorn will create the socket
+        
         print_success "File permissions set"
+        print_info "Verifying .env file permissions..."
+        ls -la "$PROJECT_DIR/.env" || print_warning ".env file not found or not accessible"
     else
         print_warning "Skipping permission setup"
     fi
