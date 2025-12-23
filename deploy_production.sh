@@ -267,12 +267,15 @@ step_create_systemd_service() {
         # Create service file
         SERVICE_FILE="/etc/systemd/system/cubase-macros-shop.service"
         
+        # Use RuntimeDirectory for better systemd integration
+        # This creates /run/gunicorn/ with proper permissions
         cat > "$SERVICE_FILE" << EOF
 [Unit]
 Description=Gunicorn daemon for Cubase Macros Hub Django application
 After=network.target
 
 [Service]
+Type=notify
 User=$SERVICE_USER
 Group=$SERVICE_GROUP
 WorkingDirectory=$PROJECT_DIR
@@ -281,15 +284,19 @@ Environment="DJANGO_SETTINGS_MODULE=cubase_macros_shop.settings.production"
 EnvironmentFile=$PROJECT_DIR/.env
 RuntimeDirectory=gunicorn
 RuntimeDirectoryMode=0755
+UMask=0007
 ExecStart=$VENV_DIR/bin/gunicorn \\
     --workers $GUNICORN_WORKERS \\
-    --bind unix:/run/gunicorn.sock \\
+    --bind unix:/run/gunicorn/gunicorn.sock \\
     --access-logfile /var/log/gunicorn/access.log \\
     --error-logfile /var/log/gunicorn/error.log \\
+    --timeout 120 \\
+    --graceful-timeout 30 \\
     cubase_macros_shop.wsgi:application
 
 Restart=always
 RestartSec=3
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
@@ -356,7 +363,7 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_pass http://unix:/run/gunicorn.sock;
+        proxy_pass http://unix:/run/gunicorn/gunicorn.sock;
     }
 }
 EOF
