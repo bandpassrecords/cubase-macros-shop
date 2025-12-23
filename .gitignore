@@ -253,7 +253,6 @@ $RECYCLE.BIN/
 
 # Django Project Specific
 # Static files (collected)
-/static/
 /staticfiles/
 
 # Media files (user uploads)

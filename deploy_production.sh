@@ -236,6 +236,19 @@ step_collect_static() {
     if confirm "Collect static files for production"; then
         print_info "Collecting static files..."
         cd "$PROJECT_DIR"
+        
+        # Create static directory if it doesn't exist (prevents warnings)
+        if [ ! -d "$PROJECT_DIR/static" ]; then
+            mkdir -p "$PROJECT_DIR/static"
+            print_info "Created static directory"
+        fi
+        
+        # Create staticfiles directory if it doesn't exist
+        if [ ! -d "$PROJECT_DIR/staticfiles" ]; then
+            mkdir -p "$PROJECT_DIR/staticfiles"
+            print_info "Created staticfiles directory"
+        fi
+        
         "$VENV_DIR/bin/python" manage.py collectstatic --noinput
         print_success "Static files collected"
     else
