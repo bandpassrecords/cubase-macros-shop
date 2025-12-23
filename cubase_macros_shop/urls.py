@@ -11,9 +11,14 @@ from django.http import HttpResponseNotFound
 def favicon_handler(request):
     return HttpResponseNotFound()
 
+# Handler for Chrome DevTools requests
+def chrome_devtools_handler(request):
+    return HttpResponseNotFound()
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('favicon.ico', favicon_handler),  # Handle favicon requests
+    path('.well-known/appspecific/com.chrome.devtools.json', chrome_devtools_handler),  # Handle Chrome DevTools requests
     path('', include('core.urls')),
     path('accounts/', include('accounts.urls')),
     path('accounts/', include('allauth.urls')),  # Allauth URLs (login, signup, etc.)

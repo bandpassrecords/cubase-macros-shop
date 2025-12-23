@@ -58,11 +58,8 @@
         const icon = button.querySelector('i');
         const countSpan = button.querySelector('.favorite-count');
         
-        // Optimistic UI update
-        const isFavorited = icon.classList.contains('fas');
-        icon.classList.toggle('fas', !isFavorited);
-        icon.classList.toggle('far', isFavorited);
-        button.classList.toggle('active', !isFavorited);
+        // Store current state for potential revert
+        const wasFavorited = icon.classList.contains('fas');
         
         // Add loading state
         button.disabled = true;
@@ -97,10 +94,19 @@
             return response.json();
         })
         .then(data => {
-            // Update UI based on response
-            icon.classList.toggle('fas', data.is_favorited);
-            icon.classList.toggle('far', !data.is_favorited);
-            button.classList.toggle('active', data.is_favorited);
+            // Update UI based on server response (set state, don't toggle)
+            if (data.is_favorited) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                button.classList.add('active');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                button.classList.remove('active');
+            }
+            
+            // Update button title
+            button.title = data.is_favorited ? 'Remove from favorites' : 'Add to favorites';
             
             if (countSpan) {
                 countSpan.textContent = data.favorite_count;
@@ -114,10 +120,16 @@
         })
         .catch(error => {
             console.error('Error:', error);
-            // Revert optimistic update
-            icon.classList.toggle('fas', isFavorited);
-            icon.classList.toggle('far', !isFavorited);
-            button.classList.toggle('active', isFavorited);
+            // Revert to original state on error
+            if (wasFavorited) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                button.classList.add('active');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                button.classList.remove('active');
+            }
             
             showToast('Something went wrong. Please try again.', 'error');
         })

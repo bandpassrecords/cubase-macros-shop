@@ -84,6 +84,7 @@ def profile(request):
     total_macros = Macro.objects.filter(user=request.user).count()
     total_public = public_macros_paginator.count
     total_private = private_macros_paginator.count
+    total_favorites = favorites_paginator.count
     
     context = {
         'profile': user_profile,
@@ -95,6 +96,7 @@ def profile(request):
         'total_macros': total_macros,
         'total_public': total_public,
         'total_private': total_private,
+        'total_favorites': total_favorites,
         'is_own_profile': True,
     }
     

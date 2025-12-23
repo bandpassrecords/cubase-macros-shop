@@ -95,7 +95,7 @@
                             {% endif %}
                             <div class="col-6 mb-3">
                                 <div class="stat-item">
-                                    <h4 class="mb-0 text-warning">{{ favorite_macros.count }}</h4>
+                                    <h4 class="mb-0 text-warning">{{ total_favorites }}</h4>
                                     <small class="text-muted">Favorites</small>
                                 </div>
                             </div>
@@ -130,7 +130,7 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="favorites-tab" data-bs-toggle="tab" data-bs-target="#favorites" type="button" role="tab">
                 <i class="fas fa-heart"></i> Favorites
-                <span class="badge bg-secondary ms-1">{{ favorite_macros.count }}</span>
+                <span class="badge bg-secondary ms-1">{{ total_favorites }}</span>
             </button>
         </li>
         {% else %}

@@ -164,8 +164,8 @@
                                 
                                 <div class="d-flex gap-2">
                                     {% if user.is_authenticated %}
-                                    <button class="btn btn-sm btn-outline-danger btn-favorite" data-macro-id="{{ macro.id }}" title="Add to favorites">
-                                        <i class="far fa-heart"></i>
+                                    <button class="btn btn-sm btn-outline-danger btn-favorite {% if macro.is_favorited %}active{% endif %}" data-macro-id="{{ macro.id }}" title="{% if macro.is_favorited %}Remove from favorites{% else %}Add to favorites{% endif %}">
+                                        <i class="{% if macro.is_favorited %}fas{% else %}far{% endif %} fa-heart"></i>
                                         <span class="favorite-count">{{ macro.favorited_by.count }}</span>
                                     </button>
                                     <button class="btn btn-sm btn-success btn-add-to-cart" data-macro-id="{{ macro.id }}" title="Add to cart">
@@ -352,9 +352,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     return response.json();
                 })
                 .then(data => {
-                    icon.classList.toggle('fas', data.is_favorited);
-                    icon.classList.toggle('far', !data.is_favorited);
-                    this.classList.toggle('active', data.is_favorited);
+                    // Update UI based on server response (set state explicitly, don't toggle)
+                    if (data.is_favorited) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        this.classList.add('active');
+                    } else {
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        this.classList.remove('active');
+                    }
+                    
+                    // Update button title
+                    this.title = data.is_favorited ? 'Remove from favorites' : 'Add to favorites';
                     
                     if (countSpan) {
                         countSpan.textContent = data.favorite_count;

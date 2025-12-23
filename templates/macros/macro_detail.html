@@ -473,9 +473,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     return response.json();
                 })
                 .then(data => {
-                    icon.classList.toggle('fas', data.is_favorited);
-                    icon.classList.toggle('far', !data.is_favorited);
-                    this.classList.toggle('active', data.is_favorited);
+                    // Update UI based on server response (set state explicitly, don't toggle)
+                    if (data.is_favorited) {
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        this.classList.add('active');
+                    } else {
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        this.classList.remove('active');
+                    }
+                    
+                    // Update button title
+                    this.title = data.is_favorited ? 'Remove from favorites' : 'Add to favorites';
                     
                     if (countSpan) {
                         countSpan.textContent = data.favorite_count;

@@ -77,6 +77,21 @@ def macro_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    # Get favorited macro IDs for the current user (for all macros on current page)
+    favorited_macro_ids = set()
+    if request.user.is_authenticated and page_obj:
+        macro_ids = [macro.id for macro in page_obj]
+        favorited_macro_ids = set(
+            MacroFavorite.objects.filter(
+                user=request.user,
+                macro_id__in=macro_ids
+            ).values_list('macro_id', flat=True)
+        )
+    
+    # Add is_favorited attribute to each macro
+    for macro in page_obj:
+        macro.is_favorited = macro.id in favorited_macro_ids
+    
     context = {
         'page_obj': page_obj,
         'form': form,
