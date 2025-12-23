@@ -508,16 +508,85 @@ step_start_services() {
     print_header "Step 13: Start Services"
     
     if confirm "Start and enable Nginx service"; then
-        systemctl start nginx
-        systemctl enable nginx
-        systemctl status nginx --no-pager -l
-        print_success "Nginx started and enabled"
+        # Check if nginx is already running
+        if systemctl is-active --quiet nginx; then
+            print_warning "Nginx is already running"
+            if confirm "Stop and restart Nginx"; then
+                systemctl stop nginx
+                sleep 2
+            else
+                print_info "Skipping Nginx start (already running)"
+                systemctl enable nginx
+                return 0
+            fi
+        fi
+        
+        # Check if ports 80 or 443 are in use
+        if command -v ss >/dev/null 2>&1; then
+            PORT80_IN_USE=$(ss -tuln | grep -c ':80 ' || true)
+            PORT443_IN_USE=$(ss -tuln | grep -c ':443 ' || true)
+        elif command -v netstat >/dev/null 2>&1; then
+            PORT80_IN_USE=$(netstat -tuln | grep -c ':80 ' || true)
+            PORT443_IN_USE=$(netstat -tuln | grep -c ':443 ' || true)
+        else
+            PORT80_IN_USE=0
+            PORT443_IN_USE=0
+        fi
+        
+        if [ "$PORT80_IN_USE" -gt 0 ] || [ "$PORT443_IN_USE" -gt 0 ]; then
+            print_error "Ports 80 or 443 are already in use"
+            print_info "Checking what's using these ports..."
+            
+            if command -v ss >/dev/null 2>&1; then
+                print_info "Processes using port 80:"
+                ss -tulpn | grep ':80 ' || true
+                print_info "Processes using port 443:"
+                ss -tulpn | grep ':443 ' || true
+            elif command -v netstat >/dev/null 2>&1; then
+                print_info "Processes using port 80:"
+                netstat -tulpn | grep ':80 ' || true
+                print_info "Processes using port 443:"
+                netstat -tulpn | grep ':443 ' || true
+            fi
+            
+            print_warning "You need to stop the process using these ports before starting Nginx"
+            print_info "Common solutions:"
+            echo "  1. If another nginx is running: sudo systemctl stop nginx"
+            echo "  2. If Apache is running: sudo systemctl stop httpd"
+            echo "  3. Find and kill the process: sudo lsof -i :80 -i :443"
+            
+            if confirm "Try to stop any existing nginx/httpd processes automatically"; then
+                systemctl stop nginx 2>/dev/null || true
+                systemctl stop httpd 2>/dev/null || true
+                sleep 2
+            else
+                print_error "Cannot start Nginx with ports in use. Please resolve manually."
+                return 1
+            fi
+        fi
+        
+        # Try to start nginx
+        if systemctl start nginx; then
+            systemctl enable nginx
+            systemctl status nginx --no-pager -l
+            print_success "Nginx started and enabled"
+        else
+            print_error "Failed to start Nginx"
+            print_info "Check the error with: sudo systemctl status nginx"
+            print_info "Or view logs: sudo journalctl -xeu nginx.service"
+            return 1
+        fi
     fi
     
     if confirm "Start Django application service (Gunicorn)"; then
-        systemctl start cubase-macros-shop.service
-        systemctl status cubase-macros-shop.service --no-pager -l
-        print_success "Django application service started"
+        if systemctl start cubase-macros-shop.service; then
+            systemctl status cubase-macros-shop.service --no-pager -l
+            print_success "Django application service started"
+        else
+            print_error "Failed to start Django application service"
+            print_info "Check the error with: sudo systemctl status cubase-macros-shop.service"
+            return 1
+        fi
     fi
 }
 
