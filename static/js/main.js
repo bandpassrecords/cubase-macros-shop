@@ -68,15 +68,34 @@
         button.disabled = true;
         button.style.opacity = '0.6';
         
+        // Get CSRF token from meta tag or cookie
+        const csrftoken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || getCookie('csrftoken');
+        
+        if (!csrftoken) {
+            console.error('CSRF token not found');
+            button.disabled = false;
+            button.style.opacity = '1';
+            showToast('Security token missing. Please refresh the page.', 'error');
+            return;
+        }
+        
         fetch(url, {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
+                'X-CSRFToken': csrftoken,
                 'Content-Type': 'application/json',
             },
             credentials: 'same-origin'
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error('CSRF verification failed. Please refresh the page.');
+                }
+                throw new Error('Request failed');
+            }
+            return response.json();
+        })
         .then(data => {
             // Update UI based on response
             icon.classList.toggle('fas', data.is_favorited);
@@ -135,10 +154,12 @@
                     position: fixed;
                     top: 20px;
                     right: 20px;
-                    background: white;
+                    background: #1e293b;
+                    color: #f1f5f9;
                     padding: 1rem 1.5rem;
                     border-radius: 0.75rem;
-                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+                    border: 1px solid #334155;
                     z-index: 10000;
                     animation: slideInRight 0.3s ease-out;
                     display: flex;
@@ -150,24 +171,37 @@
                 
                 .toast-success {
                     border-left: 4px solid #10b981;
+                    background: #1e293b;
+                    color: #f1f5f9;
                 }
                 
                 .toast-error {
                     border-left: 4px solid #ef4444;
+                    background: #1e293b;
+                    color: #f1f5f9;
                 }
                 
                 .toast-info {
                     border-left: 4px solid #06b6d4;
+                    background: #1e293b;
+                    color: #f1f5f9;
                 }
                 
                 .toast-warning {
                     border-left: 4px solid #f59e0b;
+                    background: #1e293b;
+                    color: #f1f5f9;
                 }
                 
                 .toast-content {
                     display: flex;
                     align-items: center;
                     gap: 0.75rem;
+                    color: #f1f5f9;
+                }
+                
+                .toast-content i {
+                    color: inherit;
                 }
                 
                 @keyframes slideInRight {
