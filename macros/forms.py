@@ -25,6 +25,11 @@ class MacroUploadForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        # Ensure CubaseVersion objects exist - auto-populate if empty
+        if not CubaseVersion.objects.exists():
+            self._populate_cubase_versions()
+        
         # Order queryset: Unspecified (major=0) first, then others by version descending
         queryset = CubaseVersion.objects.all().annotate(
             sort_order=Case(
@@ -32,7 +37,7 @@ class MacroUploadForm(forms.Form):
                 default=1,
                 output_field=IntegerField()
             )
-        ).order_by('sort_order', '-major_version', '-minor_version', '-patch_version')
+        ).order_by('sort_order', '-major_version')
         self.fields['cubase_version'].queryset = queryset
         self.fields['cubase_version'].empty_label = None  # Remove empty label since we have "Unspecified"
         
@@ -41,7 +46,44 @@ class MacroUploadForm(forms.Form):
             unspecified_version = CubaseVersion.objects.get(version='Unspecified')
             self.fields['cubase_version'].initial = unspecified_version
         except CubaseVersion.DoesNotExist:
-            pass
+            # If Unspecified doesn't exist, try to create it
+            unspecified_version = CubaseVersion.objects.create(
+                version='Unspecified',
+                major_version=0
+            )
+            self.fields['cubase_version'].initial = unspecified_version
+    
+    def _populate_cubase_versions(self):
+        """Auto-populate CubaseVersion objects if they don't exist"""
+        versions = []
+        
+        # Add "Unspecified" as the default option (with major=0 so it sorts first)
+        versions.append({
+            'version': 'Unspecified',
+            'major': 0,
+        })
+        
+        # Add "Cubase 4 or older" option
+        versions.append({
+            'version': 'Cubase 4 or older',
+            'major': 4,
+        })
+        
+        # Generate major versions 5-15
+        for major in range(5, 16):  # 5 to 15 inclusive
+            versions.append({
+                'version': f'Cubase {major}',
+                'major': major,
+            })
+        
+        # Create versions that don't exist
+        for version_data in versions:
+            CubaseVersion.objects.get_or_create(
+                version=version_data['version'],
+                defaults={
+                    'major_version': version_data['major'],
+                }
+            )
     
     def clean_file(self):
         file = self.cleaned_data.get('file')
@@ -227,30 +269,20 @@ class CubaseVersionForm(forms.ModelForm):
     
     class Meta:
         model = CubaseVersion
-        fields = ['version', 'major_version', 'minor_version', 'patch_version']
+        fields = ['version', 'major_version']
         widgets = {
             'version': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'e.g., Cubase 13.0.1'
+                'placeholder': 'e.g., Cubase 13'
             }),
             'major_version': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'placeholder': '13'
             }),
-            'minor_version': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': '0'
-            }),
-            'patch_version': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': '1'
-            }),
         }
         help_texts = {
             'version': 'Full version string as it appears in Cubase.',
-            'major_version': 'Major version number.',
-            'minor_version': 'Minor version number.',
-            'patch_version': 'Patch version number.',
+            'major_version': 'Major version number only.',
         }
 
 

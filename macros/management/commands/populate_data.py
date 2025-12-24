@@ -40,16 +40,12 @@ class Command(BaseCommand):
         versions.append({
             'version': 'Unspecified',
             'major': 0,
-            'minor': 0,
-            'patch': 0,
         })
         
         # Add "Cubase 4 or older" option
         versions.append({
             'version': 'Cubase 4 or older',
             'major': 4,
-            'minor': 0,
-            'patch': 0,
         })
         
         # Generate major versions 5-15 (4 is covered by "4 or older")
@@ -57,8 +53,6 @@ class Command(BaseCommand):
             versions.append({
                 'version': f'Cubase {major}',
                 'major': major,
-                'minor': 0,
-                'patch': 0,
             })
         
         # Sort by major version (descending), but keep Unspecified at the beginning
@@ -69,8 +63,6 @@ class Command(BaseCommand):
                 version=version_data['version'],
                 defaults={
                     'major_version': version_data['major'],
-                    'minor_version': version_data['minor'],
-                    'patch_version': version_data['patch'],
                 }
             )
             if created:

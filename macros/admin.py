@@ -10,10 +10,10 @@ from .models import (
 
 @admin.register(CubaseVersion)
 class CubaseVersionAdmin(admin.ModelAdmin):
-    list_display = ['version', 'major_version', 'minor_version', 'patch_version', 'created_at']
+    list_display = ['version', 'major_version', 'created_at']
     list_filter = ['major_version', 'created_at']
     search_fields = ['version']
-    ordering = ['-major_version', '-minor_version', '-patch_version']
+    ordering = ['-major_version']
 
 
 class MacroVoteInline(admin.TabularInline):

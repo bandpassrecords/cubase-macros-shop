@@ -7,17 +7,15 @@ import os
 
 
 class CubaseVersion(models.Model):
-    """Model for tracking Cubase versions"""
+    """Model for tracking Cubase versions - only major version is stored"""
     version = models.CharField(max_length=50, unique=True)
     major_version = models.IntegerField()
-    minor_version = models.IntegerField(default=0)
-    patch_version = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
         # Order: Unspecified (major=0) first, then others by version descending
         # We'll use custom ordering in forms/views to put Unspecified first
-        ordering = ['-major_version', '-minor_version', '-patch_version']
+        ordering = ['-major_version']
     
     def __str__(self):
         return self.version

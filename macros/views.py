@@ -205,8 +205,16 @@ def upload_keycommands(request):
                 if not cubase_version:
                     try:
                         cubase_version = CubaseVersion.objects.get(version='Unspecified')
+                        logger.info(f"Using default 'Unspecified' version for upload")
                     except CubaseVersion.DoesNotExist:
-                        cubase_version = None
+                        logger.warning("'Unspecified' CubaseVersion not found, creating it")
+                        cubase_version = CubaseVersion.objects.create(
+                            version='Unspecified',
+                            major_version=0
+                        )
+                
+                # Log the version being used
+                logger.info(f"Upload using Cubase version: {cubase_version.version} (ID: {cubase_version.id})")
                 
                 # Store parsed data in session for the selection step
                 request.session['upload_data'] = {
@@ -313,8 +321,17 @@ def save_selected_macros(request):
                 try:
                     unspecified_version = CubaseVersion.objects.get(version='Unspecified')
                     cubase_version_id = unspecified_version.id
+                    logger.info(f"Using default 'Unspecified' version for macro save")
                 except CubaseVersion.DoesNotExist:
-                    cubase_version_id = None
+                    logger.warning("'Unspecified' CubaseVersion not found during save, creating it")
+                    unspecified_version = CubaseVersion.objects.create(
+                        version='Unspecified',
+                        major_version=0
+                    )
+                    cubase_version_id = unspecified_version.id
+            
+            # Log the version ID being used
+            logger.info(f"Saving macros with Cubase version ID: {cubase_version_id}")
             
             # Convert private_macro_indices to set for fast lookup
             private_indices_set = set(int(idx) for idx in private_macro_indices)
@@ -371,6 +388,12 @@ def save_selected_macros(request):
                             'is_private': macro_is_private,  # Use individual macro privacy setting
                         }
                     )
+                    
+                    # Log if version was saved correctly (for debugging)
+                    if macro.cubase_version_id != cubase_version_id:
+                        logger.warning(f"Macro {macro.id} version mismatch: expected {cubase_version_id}, got {macro.cubase_version_id}")
+                    else:
+                        logger.debug(f"Macro {macro.id} '{macro.name}' saved with version ID: {cubase_version_id}")
                     
                     if created:
                         created_macros += 1
@@ -675,7 +698,7 @@ def popular_macros(request):
     page_obj = paginator.get_page(page_number)
     
     # Get Cubase versions for filter dropdown
-    cubase_versions = CubaseVersion.objects.all().order_by('-major_version', '-minor_version', '-patch_version')
+    cubase_versions = CubaseVersion.objects.all().order_by('-major_version')
     
     context = {
         'page_obj': page_obj,
