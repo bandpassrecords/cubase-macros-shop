@@ -7,11 +7,10 @@ from .models import UserProfile
 class CustomUserCreationForm(UserCreationForm):
     """Custom user registration form - email only, no username, no first/last name"""
     email = forms.EmailField(required=True, help_text="Required. Enter a valid email address.")
-    email2 = forms.EmailField(required=True, label="Confirm Email", help_text="Enter the same email address again for verification.")
     
     class Meta:
         model = User
-        fields = ("email", "email2", "password1", "password2")
+        fields = ("email", "password1", "password2")
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -24,9 +23,6 @@ class CustomUserCreationForm(UserCreationForm):
             if field_name == 'email':
                 field.widget.attrs['autocomplete'] = 'email'
                 field.help_text = None
-            elif field_name == 'email2':
-                field.widget.attrs['autocomplete'] = 'email'
-                field.help_text = None
             elif field_name == 'password1':
                 field.widget.attrs['autocomplete'] = 'new-password'
                 # Keep help_text for error display (template will show it only on error)
@@ -35,18 +31,11 @@ class CustomUserCreationForm(UserCreationForm):
                 # Remove the default help text for password2
                 field.help_text = None
     
-    def clean_email2(self):
-        """Verify that both email fields match"""
-        email = self.cleaned_data.get('email')
-        email2 = self.cleaned_data.get('email2')
-        if email and email2 and email != email2:
-            raise forms.ValidationError("The two email fields didn't match.")
-        return email2
-    
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data["email"]
         user.username = self.cleaned_data["email"]  # Set username to email for compatibility
+        user.is_active = False  # User must verify email before account is active
         if commit:
             user.save()
         return user

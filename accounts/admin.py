@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from .models import UserProfile
+from .models import UserProfile, EmailVerification
 
 
 class UserProfileInline(admin.StackedInline):
@@ -77,3 +77,22 @@ class UserProfileAdmin(admin.ModelAdmin):
 # Re-register UserAdmin
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
+
+
+@admin.register(EmailVerification)
+class EmailVerificationAdmin(admin.ModelAdmin):
+    list_display = ['user', 'email', 'verified', 'created_at', 'verified_at', 'is_expired_display']
+    list_filter = ['verified', 'created_at']
+    search_fields = ['user__email', 'token']
+    readonly_fields = ['token', 'created_at', 'verified_at']
+    ordering = ['-created_at']
+    
+    def email(self, obj):
+        return obj.user.email
+    email.short_description = 'Email'
+    
+    def is_expired_display(self, obj):
+        if obj.verified:
+            return 'N/A (Verified)'
+        return 'Yes' if obj.is_expired() else 'No'
+    is_expired_display.short_description = 'Expired'

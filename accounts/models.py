@@ -2,6 +2,10 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
+from django.core.signing import TimestampSigner
+import secrets
+from datetime import timedelta
 
 
 class UserProfile(models.Model):
@@ -58,3 +62,41 @@ def save_user_profile(sender, instance, **kwargs):
         instance.profile.save()
     else:
         UserProfile.objects.create(user=instance)
+
+
+class EmailVerification(models.Model):
+    """Model for email verification tokens"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='email_verification')
+    token = models.CharField(max_length=64, unique=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    verified = models.BooleanField(default=False)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        verbose_name = "Email Verification"
+        verbose_name_plural = "Email Verifications"
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Verification for {self.user.email} - {'Verified' if self.verified else 'Pending'}"
+    
+    @classmethod
+    def generate_token(cls):
+        """Generate a secure random token"""
+        return secrets.token_urlsafe(32)
+    
+    def is_expired(self):
+        """Check if token has expired (10 minutes)"""
+        if self.verified:
+            return False
+        expiration_time = self.created_at + timedelta(minutes=10)
+        return timezone.now() > expiration_time
+    
+    def verify(self):
+        """Mark email as verified"""
+        self.verified = True
+        self.verified_at = timezone.now()
+        self.save()
+        # Activate user account
+        self.user.is_active = True
+        self.user.save()
