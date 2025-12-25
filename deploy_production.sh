@@ -131,17 +131,27 @@ step_install_dependencies() {
 step_configure_firewall() {
     print_header "Step 3: Configure Firewall"
     
-    if confirm "Configure firewall (firewalld) to allow HTTP and HTTPS"; then
+    if confirm "Configure firewall (firewalld) to allow HTTP, HTTPS, and SMTP"; then
         print_info "Configuring firewall..."
         
         systemctl enable firewalld
         systemctl start firewalld
         
+        # Web server ports
         firewall-cmd --permanent --add-service=http
         firewall-cmd --permanent --add-service=https
+        
+        # SMTP port for email sending
+        print_info "Adding SMTP port 587 for email functionality..."
+        firewall-cmd --permanent --add-port=587/tcp  # SMTP with TLS
+        
         firewall-cmd --reload
         
         print_success "Firewall configured"
+        print_info "Opened ports:"
+        echo "  - HTTP (80)"
+        echo "  - HTTPS (443)"
+        echo "  - SMTP TLS (587) - for email sending"
         print_info "Current firewall rules:"
         firewall-cmd --list-all
     else
