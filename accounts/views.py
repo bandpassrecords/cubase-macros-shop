@@ -26,7 +26,8 @@ class CustomLoginView(AllauthLoginView):
 class CustomPasswordResetView(auth_views.PasswordResetView):
     """Custom password reset view that ensures correct domain is used"""
     template_name = 'accounts/password_reset.html'
-    email_template_name = 'registration/password_reset_email.html'
+    email_template_name = 'registration/password_reset_email.txt'  # Plain text version
+    html_email_template_name = 'registration/password_reset_email.html'  # HTML version
     subject_template_name = 'registration/password_reset_email_subject.txt'
     form_class = CustomPasswordResetForm
     
@@ -39,7 +40,7 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
         return context
     
     def form_valid(self, form):
-        # Override to ensure domain is correct in email context
+        # Override to ensure domain is correct in email context and HTML email is sent
         opts = {
             'use_https': self.request.is_secure(),
             'token_generator': self.token_generator,
@@ -47,7 +48,7 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
             'email_template_name': self.email_template_name,
             'subject_template_name': self.subject_template_name,
             'request': self.request,
-            'html_email_template_name': self.html_email_template_name,
+            'html_email_template_name': self.html_email_template_name,  # This enables HTML emails
             'extra_email_context': {
                 'domain': get_current_site(self.request).domain,
                 'site_name': get_current_site(self.request).name or 'Cubase Macros Shop',
