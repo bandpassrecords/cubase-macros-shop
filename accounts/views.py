@@ -41,6 +41,7 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
     
     def form_valid(self, form):
         # Override to ensure domain is correct in email context and HTML email is sent
+        # Build the email options with our custom settings
         opts = {
             'use_https': self.request.is_secure(),
             'token_generator': self.token_generator,
@@ -54,8 +55,10 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
                 'site_name': get_current_site(self.request).name or 'Cubase Macros Shop',
             }
         }
+        # Call form.save() with our options - this sends the email
         form.save(**opts)
-        return super().form_valid(form)
+        # Return redirect to success page (don't call super() to avoid duplicate email)
+        return redirect(self.get_success_url())
 
 
 def signup(request):
