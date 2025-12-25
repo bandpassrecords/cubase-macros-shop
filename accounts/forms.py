@@ -114,7 +114,7 @@ class UserUpdateForm(forms.ModelForm):
         model = User
         fields = ['email', 'first_name', 'last_name']
         widgets = {
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'readonly': True}),
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First name'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last name'}),
         }
@@ -122,9 +122,23 @@ class UserUpdateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['email'].required = True
+        # Make email read-only (cannot be changed)
+        # Use readonly instead of disabled so the value is still submitted
+        self.fields['email'].widget.attrs['readonly'] = True
+        self.fields['email'].widget.attrs['style'] = 'background-color: #e9ecef; cursor: not-allowed;'
         # Remove username field if it exists
         if 'username' in self.fields:
             del self.fields['username']
+    
+    def save(self, commit=True):
+        """Override save to prevent email from being changed"""
+        user = super().save(commit=False)
+        # Always keep the original email (don't allow changes)
+        if self.instance and self.instance.pk:
+            user.email = self.instance.email
+        if commit:
+            user.save()
+        return user
 
 
 class CustomPasswordResetForm(PasswordResetForm):
