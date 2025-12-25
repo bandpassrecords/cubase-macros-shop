@@ -11,6 +11,8 @@ from datetime import timedelta
 class UserProfile(models.Model):
     """Extended user profile model"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    # Public identifier - random unique ID for public URLs (keeps email private)
+    public_id = models.CharField(max_length=32, unique=True, db_index=True, editable=False, null=True, blank=True)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=100, blank=True)
     website = models.URLField(blank=True)
@@ -46,6 +48,26 @@ class UserProfile(models.Model):
             return f"{self.user.first_name} {self.user.last_name}".strip()
         # Use email prefix as fallback
         return self.user.email.split('@')[0] if self.user.email else 'User'
+    
+    @staticmethod
+    def generate_public_id():
+        """Generate a unique random public ID"""
+        return secrets.token_urlsafe(24)  # 32 characters when URL-safe encoded
+    
+    def save(self, *args, **kwargs):
+        """Override save to generate public_id if it doesn't exist"""
+        if not self.public_id:
+            # Generate unique public_id
+            max_attempts = 10
+            for _ in range(max_attempts):
+                public_id = self.generate_public_id()
+                if not UserProfile.objects.filter(public_id=public_id).exists():
+                    self.public_id = public_id
+                    break
+            else:
+                # If we couldn't generate a unique ID after max attempts, raise error
+                raise ValueError("Could not generate unique public_id")
+        super().save(*args, **kwargs)
 
 
 @receiver(post_save, sender=User)

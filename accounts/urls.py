@@ -43,5 +43,5 @@ urlpatterns = [
     path('profile/edit/', views.edit_profile, name='edit_profile'),
     path('profile/delete/', views.delete_account, name='delete_account'),
     path('dashboard/', views.dashboard, name='dashboard'),
-    path('user/<str:slug>/', views.public_profile, name='public_profile'),  # slug is email
+    path('user/<str:slug>/', views.public_profile, name='public_profile'),  # slug is public_id
 ] 

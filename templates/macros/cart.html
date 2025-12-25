@@ -68,7 +68,7 @@
                                     
                                     <div class="d-flex justify-content-between align-items-center">
                                         <small class="text-muted">
-                                            by <a href="{% url 'accounts:public_profile' macro.user.email %}">{{ macro.user.profile.display_name }}</a>
+                                            by <a href="{% url 'accounts:public_profile' macro.user.profile.public_id %}">{{ macro.user.profile.display_name }}</a>
                                         </small>
                                         <button class="btn btn-sm btn-outline-danger btn-remove-from-cart" data-macro-id="{{ macro.id }}">
                                             <i class="fas fa-times"></i> Remove

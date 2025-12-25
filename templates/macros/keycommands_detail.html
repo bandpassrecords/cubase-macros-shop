@@ -86,8 +86,8 @@
                                 <tr>
                                     <td><strong>Author:</strong></td>
                                     <td>
-                                        {% if keycommands_file.user.email %}
-                                            <a href="{% url 'accounts:public_profile' keycommands_file.user.email %}">
+                                        {% if keycommands_file.user.profile.public_id %}
+                                            <a href="{% url 'accounts:public_profile' keycommands_file.user.profile.public_id %}">
                                                 {{ keycommands_file.user.profile.display_name }}
                                             </a>
                                         {% else %}

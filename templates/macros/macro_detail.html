@@ -53,8 +53,8 @@
                                 <tr>
                                     <td><strong>Author:</strong></td>
                                     <td>
-                                        {% if macro.user.email %}
-                                            <a href="{% url 'accounts:public_profile' macro.user.email %}">
+                                        {% if macro.user.profile.public_id %}
+                                            <a href="{% url 'accounts:public_profile' macro.user.profile.public_id %}">
                                                 {{ macro.user.profile.display_name }}
                                             </a>
                                         {% else %}
@@ -314,8 +314,8 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        {% if macro.user.email %}
-                        <a href="{% url 'accounts:public_profile' macro.user.email %}" class="btn btn-outline-info btn-sm">
+                        {% if macro.user.profile.public_id %}
+                        <a href="{% url 'accounts:public_profile' macro.user.profile.public_id %}" class="btn btn-outline-info btn-sm">
                             <i class="fas fa-user"></i> View Author Profile
                         </a>
                         {% endif %}

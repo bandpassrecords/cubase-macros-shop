@@ -277,9 +277,9 @@ def edit_profile(request):
 
 
 def public_profile(request, slug):
-    """View public profile of a user - shows only public macros. slug is email"""
-    user = get_object_or_404(User, email=slug)
-    user_profile = get_object_or_404(UserProfile, user=user)
+    """View public profile of a user - shows only public macros. slug is public_id"""
+    user_profile = get_object_or_404(UserProfile, public_id=slug)
+    user = user_profile.user
     
     # Get user's public macros (is_private=False means public)
     public_macros = Macro.objects.filter(
