@@ -816,6 +816,53 @@ def order_history(request):
 
 
 @login_required
+@require_http_methods(["POST"])
+def add_order_to_cart(request, order_id):
+    """Add all macros from an order back to the cart"""
+    # Get the order and verify ownership
+    order = get_object_or_404(DownloadOrder, id=order_id, user=request.user)
+    
+    # Get all macros from this order that still exist and are public
+    order_items = order.order_items.select_related('macro').filter(
+        macro__isnull=False,
+        macro__is_private=False
+    )
+    
+    if not order_items:
+        messages.warning(request, 'No macros are available from this order. Some macros may have been deleted or made private.')
+        return redirect('macros:order_history')
+    
+    # Initialize cart if it doesn't exist
+    if 'macro_cart' not in request.session:
+        request.session['macro_cart'] = []
+    
+    cart = request.session.get('macro_cart', [])
+    added_count = 0
+    already_in_cart = 0
+    
+    # Add each macro to cart
+    for item in order_items:
+        if item.macro:
+            macro_id_str = str(item.macro.id)
+            if macro_id_str not in cart:
+                cart.append(macro_id_str)
+                added_count += 1
+            else:
+                already_in_cart += 1
+    
+    # Update session
+    request.session['macro_cart'] = cart
+    request.session.modified = True
+    
+    if added_count > 0:
+        messages.success(request, f'Added {added_count} macro(s) from order to your cart.')
+    if already_in_cart > 0:
+        messages.info(request, f'{already_in_cart} macro(s) were already in your cart.')
+    
+    return redirect('macros:view_cart')
+
+
+@login_required
 def edit_macro(request, macro_id):
     """Edit a macro"""
     # First check if macro exists

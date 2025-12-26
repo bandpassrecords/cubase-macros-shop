@@ -45,9 +45,17 @@
                                             <span class="badge bg-primary">{{ order.macros_count }} macro{{ order.macros_count|pluralize }}</span>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#order-{{ order.id }}" aria-expanded="false">
-                                                <i class="fas fa-chevron-down me-1"></i>View Details
-                                            </button>
+                                            <div class="d-flex gap-2">
+                                                <form method="post" action="{% url 'macros:add_order_to_cart' order.id %}" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-success">
+                                                        <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                                                    </button>
+                                                </form>
+                                                <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#order-{{ order.id }}" aria-expanded="false">
+                                                    <i class="fas fa-chevron-down me-1"></i>View Details
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr>

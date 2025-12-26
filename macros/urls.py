@@ -26,6 +26,7 @@ urlpatterns = [
     
     # Order history
     path('orders/', views.order_history, name='order_history'),
+    path('orders/<uuid:order_id>/add-to-cart/', views.add_order_to_cart, name='add_order_to_cart'),
     
     # AJAX endpoints
     path('favorite/<uuid:macro_id>/', views.toggle_favorite, name='toggle_favorite'),
