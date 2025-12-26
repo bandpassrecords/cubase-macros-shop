@@ -37,7 +37,7 @@ This document explains how to set up your `.env` file with all required environm
 
 #### `ALLOWED_HOSTS`
 - **Development:** `127.0.0.1,localhost`
-- **Production:** `cms.bandpassrecords.com`
+- **Production:** `dmh.bandpassrecords.com`
 - **Format:** Comma-separated list (no spaces)
 - **Purpose:** Security setting that prevents HTTP Host header attacks
 
@@ -105,7 +105,7 @@ This document explains how to set up your `.env` file with all required environm
 
 #### `CSRF_TRUSTED_ORIGINS`
 - **Format:** Comma-separated list of URLs
-- **Example:** `https://cms.bandpassrecords.com`
+- **Example:** `https://dmh.bandpassrecords.com`
 - **Purpose:** Allows CSRF requests from these origins
 
 ### 5. Logging Configuration
@@ -135,7 +135,7 @@ DJANGO_LOG_LEVEL=DEBUG
 ```env
 DEBUG=False
 SECRET_KEY=your-generated-production-secret-key-here
-ALLOWED_HOSTS=cms.bandpassrecords.com
+ALLOWED_HOSTS=dmh.bandpassrecords.com
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -149,7 +149,7 @@ GOOGLE_CLIENT_SECRET=your-production-secret
 SECURE_SSL_REDIRECT=True
 SESSION_COOKIE_SECURE=True
 CSRF_COOKIE_SECURE=True
-CSRF_TRUSTED_ORIGINS=https://cms.bandpassrecords.com
+CSRF_TRUSTED_ORIGINS=https://dmh.bandpassrecords.com
 DJANGO_LOG_LEVEL=INFO
 ```
 

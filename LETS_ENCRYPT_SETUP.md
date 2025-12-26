@@ -1,11 +1,11 @@
 # Let's Encrypt SSL Setup Guide
 
-Complete guide for setting up Let's Encrypt SSL certificates for `cms.bandpassrecords.com`.
+Complete guide for setting up Let's Encrypt SSL certificates for `dmh.bandpassrecords.com`.
 
 ## Prerequisites
 
 1. **Domain DNS configured:**
-   - `cms.bandpassrecords.com` must point to your server's IP address
+   - `dmh.bandpassrecords.com` must point to your server's IP address
    - DNS propagation may take a few minutes to hours
 
 2. **Server requirements:**
@@ -15,9 +15,9 @@ Complete guide for setting up Let's Encrypt SSL certificates for `cms.bandpassre
 
 3. **Verify DNS:**
    ```bash
-   dig cms.bandpassrecords.com
+   dig dmh.bandpassrecords.com
    # or
-   nslookup cms.bandpassrecords.com
+   nslookup dmh.bandpassrecords.com
    ```
    
    Should return your server's IP address.
@@ -47,14 +47,14 @@ sudo dnf install certbot python3-certbot-nginx
 Before getting SSL, configure Nginx for HTTP:
 
 ```bash
-sudo nano /etc/nginx/sites-available/cms.bandpassrecords.com
+sudo nano /etc/nginx/sites-available/dmh.bandpassrecords.com
 ```
 
 Add:
 ```nginx
 server {
     listen 80;
-    server_name cms.bandpassrecords.com;
+    server_name dmh.bandpassrecords.com;
 
     location / {
         proxy_set_header Host $host;
@@ -68,7 +68,7 @@ server {
 
 Enable and test:
 ```bash
-sudo ln -s /etc/nginx/sites-available/cms.bandpassrecords.com /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/dmh.bandpassrecords.com /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -77,7 +77,7 @@ sudo systemctl reload nginx
 
 Run Certbot:
 ```bash
-sudo certbot --nginx -d cms.bandpassrecords.com
+sudo certbot --nginx -d dmh.bandpassrecords.com
 ```
 
 Follow the prompts:
@@ -101,11 +101,11 @@ sudo certbot certificates
 You should see:
 ```
 Found the following certificates:
-  Certificate Name: cms.bandpassrecords.com
-    Domains: cms.bandpassrecords.com
+  Certificate Name: dmh.bandpassrecords.com
+    Domains: dmh.bandpassrecords.com
     Expiry Date: YYYY-MM-DD HH:MM:SS+00:00 (VALID: XX days)
-    Certificate Path: /etc/letsencrypt/live/cms.bandpassrecords.com/fullchain.pem
-    Private Key Path: /etc/letsencrypt/live/cms.bandpassrecords.com/privkey.pem
+    Certificate Path: /etc/letsencrypt/live/dmh.bandpassrecords.com/fullchain.pem
+    Private Key Path: /etc/letsencrypt/live/dmh.bandpassrecords.com/privkey.pem
 ```
 
 ### 5. Test Auto-Renewal
@@ -118,7 +118,7 @@ sudo certbot renew --dry-run
 Expected output:
 ```
 Congratulations, all renewals succeeded. The following certs have been renewed:
-  /etc/letsencrypt/live/cms.bandpassrecords.com/fullchain.pem (success)
+  /etc/letsencrypt/live/dmh.bandpassrecords.com/fullchain.pem (success)
 ```
 
 ### 6. Update Django Settings
@@ -129,7 +129,7 @@ After SSL is installed, update your `.env` file:
 SECURE_SSL_REDIRECT=True
 SESSION_COOKIE_SECURE=True
 CSRF_COOKIE_SECURE=True
-CSRF_TRUSTED_ORIGINS=https://cms.bandpassrecords.com
+CSRF_TRUSTED_ORIGINS=https://dmh.bandpassrecords.com
 ```
 
 Restart your Django application:
@@ -158,7 +158,7 @@ sudo tail -f /var/log/letsencrypt/letsencrypt.log
 sudo certbot renew
 
 # Renew specific certificate
-sudo certbot renew --cert-name cms.bandpassrecords.com
+sudo certbot renew --cert-name dmh.bandpassrecords.com
 
 # Force renewal (even if not expiring)
 sudo certbot renew --force-renewal
@@ -192,17 +192,17 @@ After Certbot runs, your Nginx config should look like this:
 ```nginx
 server {
     listen 80;
-    server_name cms.bandpassrecords.com;
+    server_name dmh.bandpassrecords.com;
     return 301 https://$server_name$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name cms.bandpassrecords.com;
+    server_name dmh.bandpassrecords.com;
 
     # Let's Encrypt certificates
-    ssl_certificate /etc/letsencrypt/live/cms.bandpassrecords.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/cms.bandpassrecords.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/dmh.bandpassrecords.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/dmh.bandpassrecords.com/privkey.pem;
     
     # SSL Configuration
     ssl_protocols TLSv1.2 TLSv1.3;
@@ -245,10 +245,10 @@ server {
 ### Certificate Not Obtained
 
 **Error: "Failed to obtain certificate"**
-- Check DNS: `dig cms.bandpassrecords.com`
+- Check DNS: `dig dmh.bandpassrecords.com`
 - Verify port 80 is open: `sudo ufw allow 80`
 - Check Nginx is running: `sudo systemctl status nginx`
-- Verify domain points to server: `curl -I http://cms.bandpassrecords.com`
+- Verify domain points to server: `curl -I http://dmh.bandpassrecords.com`
 
 **Error: "Connection refused"**
 - Ensure Nginx is listening on port 80
@@ -277,14 +277,14 @@ sudo certbot renew --force-renewal
 **"SSL certificate not found"**
 ```bash
 # Verify certificate exists
-ls -la /etc/letsencrypt/live/cms.bandpassrecords.com/
+ls -la /etc/letsencrypt/live/dmh.bandpassrecords.com/
 
 # Check Nginx config
 sudo nginx -t
 
 # Verify permissions
-sudo chmod 644 /etc/letsencrypt/live/cms.bandpassrecords.com/fullchain.pem
-sudo chmod 600 /etc/letsencrypt/live/cms.bandpassrecords.com/privkey.pem
+sudo chmod 644 /etc/letsencrypt/live/dmh.bandpassrecords.com/fullchain.pem
+sudo chmod 600 /etc/letsencrypt/live/dmh.bandpassrecords.com/privkey.pem
 ```
 
 ### Rate Limiting
@@ -295,24 +295,24 @@ Let's Encrypt has rate limits:
 
 If you hit limits, wait or use staging:
 ```bash
-sudo certbot --nginx -d cms.bandpassrecords.com --staging
+sudo certbot --nginx -d dmh.bandpassrecords.com --staging
 ```
 
 ## Testing SSL
 
 1. **Test in browser:**
-   - Visit: `https://cms.bandpassrecords.com`
+   - Visit: `https://dmh.bandpassrecords.com`
    - Check for padlock icon
    - Verify certificate details
 
 2. **Test with SSL Labs:**
    - Visit: https://www.ssllabs.com/ssltest/
-   - Enter: `cms.bandpassrecords.com`
+   - Enter: `dmh.bandpassrecords.com`
    - Review SSL rating (aim for A or A+)
 
 3. **Test with command line:**
    ```bash
-   openssl s_client -connect cms.bandpassrecords.com:443 -servername cms.bandpassrecords.com
+   openssl s_client -connect dmh.bandpassrecords.com:443 -servername dmh.bandpassrecords.com
    ```
 
 ## Security Best Practices

@@ -17,7 +17,7 @@ NC='\033[0m' # No Color
 # Configuration variables (will be prompted)
 PROJECT_DIR=""
 VENV_DIR=""
-DOMAIN="cms.bandpassrecords.com"
+DOMAIN="dmh.bandpassrecords.com"
 SERVICE_USER="nginx"
 SERVICE_GROUP="nginx"
 GUNICORN_WORKERS=3

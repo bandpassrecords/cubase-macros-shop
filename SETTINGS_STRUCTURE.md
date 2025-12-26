@@ -109,7 +109,7 @@ Both development and production settings use environment variables from `.env` f
 ### Production
 - `DEBUG` - Must be False (defaults to False)
 - `SECRET_KEY` - **REQUIRED** (generate a new one!)
-- `ALLOWED_HOSTS` - **REQUIRED** (e.g., `cms.bandpassrecords.com`)
+- `ALLOWED_HOSTS` - **REQUIRED** (e.g., `dmh.bandpassrecords.com`)
 - `EMAIL_*` - Required for sending emails
 - `SECURE_SSL_REDIRECT` - Set to True with SSL
 - `SESSION_COOKIE_SECURE` - Set to True with SSL

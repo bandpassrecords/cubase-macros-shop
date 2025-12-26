@@ -14,9 +14,9 @@ DEBUG=False
 SECRET_KEY=django-insecure-t^6zgheq3rvc&k82xos5+&a!#cb5vo_r^o70x!y%f$upx5jo4&
 
 # Allowed hosts - comma-separated list of domains
-# For production: cms.bandpassrecords.com
+# For production: dmh.bandpassrecords.com
 # For development: 127.0.0.1,localhost
-ALLOWED_HOSTS=cms.bandpassrecords.com,127.0.0.1,localhost
+ALLOWED_HOSTS=dmh.bandpassrecords.com,127.0.0.1,localhost
 
 # ============================================================================
 # DATABASE CONFIGURATION
@@ -66,7 +66,7 @@ GOOGLE_CLIENT_SECRET=XXXXX
 
 # SSL/HTTPS Settings
 # Set to True when you have Let's Encrypt SSL certificate installed
-# After running: sudo certbot --nginx -d cms.bandpassrecords.com
+# After running: sudo certbot --nginx -d dmh.bandpassrecords.com
 SECURE_SSL_REDIRECT=False
 
 # Cookie Security (set to True in production with HTTPS)
@@ -75,7 +75,7 @@ CSRF_COOKIE_SECURE=False
 
 # CSRF Trusted Origins (comma-separated list)
 # Add your production domains here when using HTTPS
-CSRF_TRUSTED_ORIGINS=https://cms.bandpassrecords.com
+CSRF_TRUSTED_ORIGINS=https://dmh.bandpassrecords.com
 
 # ============================================================================
 # LOGGING CONFIGURATION

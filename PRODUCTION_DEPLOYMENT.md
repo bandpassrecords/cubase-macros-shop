@@ -25,7 +25,7 @@ Create a `.env` file in your project root (same directory as `manage.py`) with t
 # Django Core Settings
 DEBUG=False
 SECRET_KEY=your-generated-secret-key-here
-ALLOWED_HOSTS=cms.bandpassrecords.com
+ALLOWED_HOSTS=dmh.bandpassrecords.com
 
 # Email Configuration
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
@@ -45,7 +45,7 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 SECURE_SSL_REDIRECT=True
 SESSION_COOKIE_SECURE=True
 CSRF_COOKIE_SECURE=True
-CSRF_TRUSTED_ORIGINS=https://cms.bandpassrecords.com
+CSRF_TRUSTED_ORIGINS=https://dmh.bandpassrecords.com
 
 # Logging
 DJANGO_LOG_LEVEL=INFO
@@ -97,10 +97,10 @@ python3 manage.py createsuperuser
 
 ### 4. Update Site Domain
 
-1. Go to Django Admin: `http://cms.bandpassrecords.com/admin/`
+1. Go to Django Admin: `http://dmh.bandpassrecords.com/admin/`
 2. Navigate to Sites > Sites
 3. Update the default site:
-   - Domain name: `cms.bandpassrecords.com`
+   - Domain name: `dmh.bandpassrecords.com`
    - Display name: `DAW Macros Hub`
 
 ### 5. Test the Application
@@ -217,7 +217,7 @@ Visit your site and test:
    
    b. **Obtain SSL Certificate:**
       ```bash
-      sudo certbot --nginx -d cms.bandpassrecords.com
+      sudo certbot --nginx -d dmh.bandpassrecords.com
       ```
       
       Certbot will:
@@ -234,21 +234,21 @@ Visit your site and test:
       
       This verifies that automatic renewal will work. Certbot automatically renews certificates before they expire (Let's Encrypt certificates are valid for 90 days).
 
-5. **Configure Nginx** (`/etc/nginx/sites-available/cms.bandpassrecords.com`):
+5. **Configure Nginx** (`/etc/nginx/sites-available/dmh.bandpassrecords.com`):
    ```nginx
    server {
        listen 80;
-       server_name cms.bandpassrecords.com;
+       server_name dmh.bandpassrecords.com;
        return 301 https://$server_name$request_uri;
    }
 
    server {
        listen 443 ssl http2;
-       server_name cms.bandpassrecords.com;
+       server_name dmh.bandpassrecords.com;
 
        # Let's Encrypt certificates (automatically configured by Certbot)
-       ssl_certificate /etc/letsencrypt/live/cms.bandpassrecords.com/fullchain.pem;
-       ssl_certificate_key /etc/letsencrypt/live/cms.bandpassrecords.com/privkey.pem;
+       ssl_certificate /etc/letsencrypt/live/dmh.bandpassrecords.com/fullchain.pem;
+       ssl_certificate_key /etc/letsencrypt/live/dmh.bandpassrecords.com/privkey.pem;
        
        # SSL Configuration (recommended settings)
        ssl_protocols TLSv1.2 TLSv1.3;
@@ -292,7 +292,7 @@ Visit your site and test:
    
    a. **Create Nginx configuration:**
       ```bash
-      sudo nano /etc/nginx/conf.d/cms.bandpassrecords.com.conf
+      sudo nano /etc/nginx/conf.d/dmh.bandpassrecords.com.conf
       ```
    
    b. **Add the configuration** (same as shown in step 5 above)
@@ -320,7 +320,7 @@ Visit your site and test:
 ### Initial Setup
 
 1. **Prerequisites:**
-   - Domain `cms.bandpassrecords.com` must point to your server's IP address
+   - Domain `dmh.bandpassrecords.com` must point to your server's IP address
    - Port 80 (HTTP) must be open and accessible
    - Nginx must be installed and running
 
@@ -338,7 +338,7 @@ Visit your site and test:
 
 3. **Obtain Certificate:**
    ```bash
-   sudo certbot --nginx -d cms.bandpassrecords.com
+   sudo certbot --nginx -d dmh.bandpassrecords.com
    ```
    
    Follow the prompts:
@@ -416,7 +416,7 @@ sudo certbot certificates
 sudo nginx -t
 
 # Check file permissions
-ls -la /etc/letsencrypt/live/cms.bandpassrecords.com/
+ls -la /etc/letsencrypt/live/dmh.bandpassrecords.com/
 ```
 
 **Port 80 blocked:**

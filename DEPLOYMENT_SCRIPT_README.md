@@ -24,7 +24,7 @@ This script automates the production deployment process for CentOS Stream 10.
    - The script will ask for confirmation (y/n) at each step
    - Enter the project directory path when prompted
    - Enter virtual environment directory (or use default)
-   - Enter domain name (or use default: cms.bandpassrecords.com)
+   - Enter domain name (or use default: dmh.bandpassrecords.com)
    - Enter number of Gunicorn workers (or use default: 3)
 
 ## What the Script Does
@@ -55,7 +55,7 @@ Make sure your `.env` file contains all necessary variables:
 ```env
 DEBUG=False
 SECRET_KEY=your-secret-key-here
-ALLOWED_HOSTS=cms.bandpassrecords.com
+ALLOWED_HOSTS=dmh.bandpassrecords.com
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
@@ -69,7 +69,7 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 SECURE_SSL_REDIRECT=True
 SESSION_COOKIE_SECURE=True
 CSRF_COOKIE_SECURE=True
-CSRF_TRUSTED_ORIGINS=https://cms.bandpassrecords.com
+CSRF_TRUSTED_ORIGINS=https://dmh.bandpassrecords.com
 DJANGO_LOG_LEVEL=INFO
 ```
 
@@ -77,7 +77,7 @@ DJANGO_LOG_LEVEL=INFO
 
 You can modify these variables at the top of the script:
 
-- `DOMAIN` - Your domain name (default: cms.bandpassrecords.com)
+- `DOMAIN` - Your domain name (default: dmh.bandpassrecords.com)
 - `SERVICE_USER` - User to run the service (default: nginx)
 - `SERVICE_GROUP` - Group to run the service (default: nginx)
 - `GUNICORN_WORKERS` - Number of Gunicorn workers (default: 3)
@@ -101,7 +101,7 @@ You can:
 ### Files and Directories
 
 - `/etc/systemd/system/cubase-macros-shop.service` - Systemd service file
-- `/etc/nginx/conf.d/cms.bandpassrecords.com.conf` - Nginx configuration
+- `/etc/nginx/conf.d/dmh.bandpassrecords.com.conf` - Nginx configuration
 - `/var/log/gunicorn/` - Gunicorn log directory
 - `$PROJECT_DIR/venv/` - Python virtual environment (if created)
 - `$PROJECT_DIR/staticfiles/` - Collected static files
@@ -152,7 +152,7 @@ sudo systemctl restart nginx
 If SSL certificate generation fails:
 1. Make sure domain DNS points to server IP
 2. Make sure port 80 is accessible
-3. Run manually: `sudo certbot --nginx -d cms.bandpassrecords.com`
+3. Run manually: `sudo certbot --nginx -d dmh.bandpassrecords.com`
 
 ### Permission Issues
 
@@ -183,12 +183,12 @@ sudo setenforce 0
 ## Manual Steps After Deployment
 
 1. **Update Django Site Domain:**
-   - Go to: https://cms.bandpassrecords.com/admin/
+   - Go to: https://dmh.bandpassrecords.com/admin/
    - Navigate to Sites > Sites
-   - Update domain name to: `cms.bandpassrecords.com`
+   - Update domain name to: `dmh.bandpassrecords.com`
 
 2. **Test Application:**
-   - Visit: https://cms.bandpassrecords.com
+   - Visit: https://dmh.bandpassrecords.com
    - Test user registration
    - Test login/logout
    - Test file uploads

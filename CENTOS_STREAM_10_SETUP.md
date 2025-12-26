@@ -89,7 +89,7 @@ pip install -r requirements.txt
 ### Create Nginx Configuration
 
 ```bash
-sudo nano /etc/nginx/conf.d/cms.bandpassrecords.com.conf
+sudo nano /etc/nginx/conf.d/dmh.bandpassrecords.com.conf
 ```
 
 Add configuration (see PRODUCTION_DEPLOYMENT.md for full config).
@@ -200,7 +200,7 @@ certbot --version
 ### Obtain Certificate
 
 ```bash
-sudo certbot --nginx -d cms.bandpassrecords.com
+sudo certbot --nginx -d dmh.bandpassrecords.com
 ```
 
 Certbot will automatically modify your Nginx configuration in `/etc/nginx/conf.d/`.
