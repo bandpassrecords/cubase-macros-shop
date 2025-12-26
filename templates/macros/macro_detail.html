@@ -313,60 +313,7 @@
             </div>
             {% endif %}
             
-            <!-- Quick Actions -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h6 class="mb-0">
-                        <i class="fas fa-bolt"></i> Quick Actions
-                    </h6>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        {% if macro.user.profile.public_id %}
-                        <a href="{% url 'accounts:public_profile' macro.user.profile.public_id %}" class="btn btn-outline-info btn-sm">
-                            <i class="fas fa-user"></i> View Author Profile
-                        </a>
-                        {% endif %}
-                        
-                        {% if not user.is_authenticated %}
-                        <a href="{% url 'accounts:signup' %}" class="btn btn-success btn-sm">
-                            <i class="fas fa-user-plus"></i> Sign Up to Rate & Favorite
-                        </a>
-                        {% endif %}
-                    </div>
-                    
-                    <!-- Secret Link Sharing (for private macros, owner only) -->
-                    {% if user.is_authenticated and user == macro.user and macro.is_private %}
-                    <hr class="my-3">
-                    <div class="mb-2">
-                        <h6 class="mb-2">
-                            <i class="fas fa-share-alt"></i> Share Private Macro
-                        </h6>
-                        <p class="text-muted small mb-2">
-                            Generate a secret link to share this private macro with others.
-                        </p>
-                        <div class="input-group input-group-sm mb-2">
-                            <input type="text" class="form-control form-control-sm" id="secret-link-input" 
-                                   value="{% if macro.secret_token %}{{ request.scheme }}://{{ request.get_host }}{% url 'macros:macro_detail_by_secret' macro.secret_token %}{% else %}Generate link to view{% endif %}" 
-                                   readonly>
-                            <button class="btn btn-outline-primary btn-sm" type="button" onclick="copySecretLink()">
-                                <i class="fas fa-copy"></i>
-                            </button>
-                        </div>
-                        <div class="d-grid">
-                            <button class="btn btn-primary btn-sm" type="button" onclick="generateSecretLink('{{ macro.id }}')">
-                                <i class="fas fa-sync-alt"></i> {% if macro.secret_token %}Regenerate{% else %}Generate{% endif %} Link
-                            </button>
-                        </div>
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle"></i> Anyone with the link can view this macro.
-                        </small>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <!-- Share -->
+            <!-- Share This Macro -->
             <div class="card mt-4">
                 <div class="card-header">
                     <h6 class="mb-0">
@@ -374,13 +321,37 @@
                     </h6>
                 </div>
                 <div class="card-body">
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="share-url" value="{{ request.build_absolute_uri }}" readonly>
-                        <button class="btn btn-outline-secondary" type="button" onclick="copyShareUrl()">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
-                    <small class="text-muted">Copy this link to share the macro</small>
+                    {% if macro.is_private and user.is_authenticated and user == macro.user %}
+                        <!-- Private macro - show secret link generation for owner -->
+                        <p class="text-muted small mb-2">
+                            Generate a secret link to share this private macro with others. Anyone with the link can view the macro.
+                        </p>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="secret-link-input" 
+                                   value="{% if macro.secret_token %}{{ request.scheme }}://{{ request.get_host }}{% url 'macros:macro_detail_by_secret' macro.secret_token %}{% else %}Generate link to view{% endif %}" 
+                                   readonly>
+                            <button class="btn btn-outline-primary" type="button" onclick="copySecretLink()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <div class="d-grid">
+                            <button class="btn btn-primary" type="button" onclick="generateSecretLink('{{ macro.id }}')">
+                                <i class="fas fa-sync-alt"></i> {% if macro.secret_token %}Regenerate{% else %}Generate{% endif %} Secret Link
+                            </button>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-info-circle"></i> Anyone with the secret link can view this macro without logging in.
+                        </small>
+                    {% else %}
+                        <!-- Public macro - show regular URL -->
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="share-url" value="{{ request.build_absolute_uri }}" readonly>
+                            <button class="btn btn-outline-secondary" type="button" onclick="copyShareUrl()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted mt-2 d-block">Copy this link to share the macro</small>
+                    {% endif %}
                 </div>
             </div>
         </div>
