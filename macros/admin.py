@@ -4,7 +4,8 @@ from django.urls import reverse
 from django.utils.safestring import mark_safe
 from .models import (
     CubaseVersion, Macro, 
-    MacroVote, MacroFavorite, MacroCollection, MacroDownload
+    MacroVote, MacroFavorite, MacroCollection, MacroDownload,
+    DownloadOrder, DownloadOrderItem
 )
 
 
@@ -135,13 +136,33 @@ class MacroCollectionAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related('user')
 
 
+@admin.register(DownloadOrder)
+class DownloadOrderAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'macros_count', 'downloaded_at', 'ip_address')
+    list_filter = ('downloaded_at',)
+    search_fields = ('user__username', 'id')
+    readonly_fields = ('id', 'downloaded_at')
+    date_hierarchy = 'downloaded_at'
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('user')
+
+
+@admin.register(DownloadOrderItem)
+class DownloadOrderItemAdmin(admin.ModelAdmin):
+    list_display = ('order', 'macro_name', 'macro_author', 'macro')
+    list_filter = ('order__downloaded_at',)
+    search_fields = ('macro_name', 'macro_author', 'order__id')
+    readonly_fields = ('order', 'macro', 'macro_name', 'macro_author')
+
+
 @admin.register(MacroDownload)
 class MacroDownloadAdmin(admin.ModelAdmin):
-    list_display = ['macro', 'get_user_display', 'ip_address', 'downloaded_at']
-    list_filter = ['downloaded_at']
-    search_fields = ['macro__name', 'user__username', 'ip_address']
+    list_display = ['macro', 'get_user_display', 'ip_address', 'order', 'downloaded_at']
+    list_filter = ['downloaded_at', 'order']
+    search_fields = ['macro__name', 'user__username', 'ip_address', 'order__id']
     readonly_fields = ['downloaded_at']
-    raw_id_fields = ['macro', 'user']
+    raw_id_fields = ['macro', 'user', 'order']
     
     def get_user_display(self, obj):
         if obj.user:
@@ -150,7 +171,7 @@ class MacroDownloadAdmin(admin.ModelAdmin):
     get_user_display.short_description = 'User'
     
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related('macro', 'user')
+        return super().get_queryset(request).select_related('macro', 'user', 'order')
 
 
 # Admin site customization

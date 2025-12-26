@@ -156,12 +156,50 @@ class MacroCollection(models.Model):
         return f'/macros/collections/{self.id}/'
 
 
+class DownloadOrder(models.Model):
+    """Model for tracking download orders - groups multiple macro downloads together"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='download_orders')
+    downloaded_at = models.DateTimeField(auto_now_add=True)
+    macros_count = models.PositiveIntegerField(default=0)  # Number of macros in this order
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-downloaded_at']
+        verbose_name = 'Download Order'
+        verbose_name_plural = 'Download Orders'
+    
+    def __str__(self):
+        return f"Order {self.id} by {self.user.username} - {self.macros_count} macro(s) on {self.downloaded_at.strftime('%Y-%m-%d %H:%M')}"
+    
+    def get_macros(self):
+        """Get all macros in this order"""
+        return self.order_items.select_related('macro', 'macro__user').all()
+
+
+class DownloadOrderItem(models.Model):
+    """Model for individual macros in a download order"""
+    order = models.ForeignKey(DownloadOrder, on_delete=models.CASCADE, related_name='order_items')
+    macro = models.ForeignKey(Macro, on_delete=models.SET_NULL, null=True, related_name='order_items')
+    macro_name = models.CharField(max_length=500)  # Store name in case macro is deleted
+    macro_author = models.CharField(max_length=150, blank=True)  # Store author username in case macro is deleted
+    
+    class Meta:
+        ordering = ['macro_name']
+        verbose_name = 'Order Item'
+        verbose_name_plural = 'Order Items'
+    
+    def __str__(self):
+        return f"{self.macro_name} in order {self.order.id}"
+
+
 class MacroDownload(models.Model):
     """Model for tracking macro downloads"""
     macro = models.ForeignKey(Macro, on_delete=models.CASCADE, related_name='downloads')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     ip_address = models.GenericIPAddressField()
     downloaded_at = models.DateTimeField(auto_now_add=True)
+    order = models.ForeignKey(DownloadOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name='downloads')
     
     class Meta:
         ordering = ['-downloaded_at']

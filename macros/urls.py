@@ -24,6 +24,9 @@ urlpatterns = [
     path('cart/clear/', views.clear_cart, name='clear_cart'),
     path('cart/upload-and-download/', views.upload_and_download, name='upload_and_download'),
     
+    # Order history
+    path('orders/', views.order_history, name='order_history'),
+    
     # AJAX endpoints
     path('favorite/<uuid:macro_id>/', views.toggle_favorite, name='toggle_favorite'),
     path('toggle-visibility/<uuid:macro_id>/', views.toggle_visibility, name='toggle_visibility'),

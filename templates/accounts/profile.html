@@ -117,6 +117,11 @@
                 <span class="badge bg-secondary ms-1">{{ total_favorites }}</span>
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" href="{% url 'macros:order_history' %}" role="tab">
+                <i class="fas fa-history"></i> Download History
+            </a>
+        </li>
         {% else %}
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="public-macros-tab" data-bs-toggle="tab" data-bs-target="#public-macros" type="button" role="tab">

@@ -14,7 +14,8 @@ import xml.etree.ElementTree as ET
 
 from .models import (
     Macro, MacroVote, MacroFavorite, 
-    MacroCollection, MacroDownload, CubaseVersion
+    MacroCollection, MacroDownload, CubaseVersion,
+    DownloadOrder, DownloadOrderItem
 )
 from .forms import (
     MacroUploadForm, MacroForm, MacroVoteForm, MacroCollectionForm,
@@ -729,14 +730,34 @@ def upload_and_download(request):
             # Use utility function to embed macros into user's file
             xml_content = create_keycommands_xml_with_embedded_macros(user_root, selected_macros)
             
-            # Create download records
-            for macro in selected_macros:
-                MacroDownload.objects.create(
-                    macro=macro,
+            # Create download order
+            with transaction.atomic():
+                order = DownloadOrder.objects.create(
                     user=request.user,
+                    macros_count=len(selected_macros),
                     ip_address=get_client_ip(request)
                 )
-                Macro.objects.filter(id=macro.id).update(download_count=F('download_count') + 1)
+                
+                # Create download records and order items
+                for macro in selected_macros:
+                    # Create order item (stores macro info even if macro is deleted later)
+                    DownloadOrderItem.objects.create(
+                        order=order,
+                        macro=macro,
+                        macro_name=macro.name,
+                        macro_author=macro.user.username
+                    )
+                    
+                    # Create download record
+                    MacroDownload.objects.create(
+                        macro=macro,
+                        user=request.user,
+                        ip_address=get_client_ip(request),
+                        order=order
+                    )
+                    
+                    # Update download count
+                    Macro.objects.filter(id=macro.id).update(download_count=F('download_count') + 1)
             
             # Clear cart after successful download
             if 'macro_cart' in request.session:
@@ -763,6 +784,26 @@ def upload_and_download(request):
     }
     
     return render(request, 'macros/upload_and_download.html', context)
+
+
+@login_required
+def order_history(request):
+    """Display user's download order history"""
+    orders = DownloadOrder.objects.filter(user=request.user).prefetch_related(
+        'order_items__macro'
+    ).order_by('-downloaded_at')
+    
+    # Paginate orders
+    paginator = Paginator(orders, 20)  # 20 orders per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'orders': page_obj,
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'macros/order_history.html', context)
 
 
 @login_required

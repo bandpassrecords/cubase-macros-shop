@@ -96,6 +96,9 @@
                                     <span class="badge bg-primary ms-2" id="cart-badge" style="display: none;">0</span>
                                     {% endif %}
                                 </a></li>
+                                <li><a class="dropdown-item" href="{% url 'macros:order_history' %}">
+                                    <i class="fas fa-history"></i> Order History
+                                </a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="{% url 'accounts:logout' %}">
                                     <i class="fas fa-sign-out-alt"></i> Logout
