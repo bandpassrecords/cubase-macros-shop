@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, PasswordResetForm, SetPasswordForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from .models import UserProfile
 
 
@@ -41,24 +42,72 @@ class CustomUserCreationForm(UserCreationForm):
         return email
     
     def save(self, commit=True):
-        user = super().save(commit=False)
-        email = self.cleaned_data["email"]
-        user.email = email
+        # Get email first - it must exist (validated by clean_email)
+        email = self.cleaned_data.get("email")
+        if not email:
+            raise ValueError("Email is required but was not provided")
         
         # Set username to email, but ensure it's unique
         # If username already exists, append a number
-        base_username = email
-        username = base_username
-        counter = 1
-        while User.objects.filter(username=username).exists():
-            username = f"{base_username}_{counter}"
-            counter += 1
+        base_username = email.strip()  # Remove any whitespace
+        if not base_username:
+            raise ValueError("Email cannot be empty")
         
-        user.username = username
-        user.is_active = False  # User must verify email before account is active
-        if commit:
-            user.save()
-        return user
+        password = self.cleaned_data.get("password1")
+        if not password:
+            raise ValueError("Password is required")
+        
+        # Retry logic to handle race conditions when multiple users sign up simultaneously
+        max_attempts = 10
+        for attempt in range(max_attempts):
+            try:
+                with transaction.atomic():
+                    # Use select_for_update to lock rows and prevent race conditions
+                    # Check if username exists with a lock
+                    username = base_username
+                    counter = 1
+                    
+                    # Try the base username first
+                    if User.objects.select_for_update().filter(username=username).exists():
+                        # Generate unique username by appending counter
+                        while User.objects.select_for_update().filter(username=username).exists():
+                            username = f"{base_username}_{counter}"
+                            counter += 1
+                            # Safety limit to prevent infinite loops
+                            if counter > 10000:
+                                raise ValueError(f"Unable to generate unique username after {counter} attempts")
+                    
+                    # Create user object directly to avoid UserCreationForm's username handling
+                    user = User(
+                        username=username,
+                        email=email,
+                        is_active=False  # User must verify email before account is active
+                    )
+                    
+                    # Set password using set_password (from UserCreationForm)
+                    user.set_password(password)
+                    
+                    if commit:
+                        user.save()
+                    
+                    return user
+                    
+            except IntegrityError as e:
+                # If we get an integrity error (duplicate username), retry
+                if 'username' in str(e).lower() or 'unique constraint' in str(e).lower():
+                    if attempt < max_attempts - 1:
+                        # Wait a small random amount before retrying (helps with concurrent requests)
+                        import time
+                        import random
+                        time.sleep(random.uniform(0.01, 0.1))
+                        continue
+                    else:
+                        raise ValueError(f"Unable to create user after {max_attempts} attempts due to username conflicts. Please try again.")
+                else:
+                    # Different integrity error, don't retry
+                    raise
+        
+        raise ValueError("Failed to create user after multiple attempts")
 
 
 class DeleteAccountForm(forms.Form):
