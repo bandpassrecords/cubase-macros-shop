@@ -129,12 +129,12 @@
     <main>
         <!-- Messages -->
         {% if messages %}
-            <div class="container mt-4">
+            <div class="container mt-4" style="position: relative; z-index: 10;">
                 {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        <i class="fas fa-{% if message.tags == 'error' or message.tags == 'danger' %}exclamation-triangle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
-                        <span>{{ message }}</span>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="color: #e0e0e0 !important;">
+                        <i class="fas fa-{% if message.tags == 'error' or message.tags == 'danger' %}exclamation-triangle{% elif message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %}" style="color: #e0e0e0 !important;"></i>
+                        <span style="color: #e0e0e0 !important;">{{ message }}</span>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 {% endfor %}
             </div>
