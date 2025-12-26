@@ -67,59 +67,6 @@
         </div>
     </div>
     
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-bolt me-2"></i>Quick Actions
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-2 col-sm-4 col-6">
-                            <a href="{% url 'macros:upload_keycommands' %}" class="btn btn-outline-primary w-100 d-flex flex-column align-items-center py-3">
-                                <i class="fas fa-upload fa-2x mb-2"></i>
-                                <small>Upload</small>
-                            </a>
-                        </div>
-                        <div class="col-md-2 col-sm-4 col-6">
-                            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-info w-100 d-flex flex-column align-items-center py-3">
-                                <i class="fas fa-layer-group fa-2x mb-2"></i>
-                                <small>My Macros</small>
-                            </a>
-                        </div>
-                        <div class="col-md-2 col-sm-4 col-6">
-                            <a href="{% url 'accounts:profile' %}" class="btn btn-outline-success w-100 d-flex flex-column align-items-center py-3">
-                                <i class="fas fa-user fa-2x mb-2"></i>
-                                <small>Profile</small>
-                            </a>
-                        </div>
-                        <div class="col-md-2 col-sm-4 col-6">
-                            <a href="{% url 'macros:macro_list' %}" class="btn btn-outline-secondary w-100 d-flex flex-column align-items-center py-3">
-                                <i class="fas fa-search fa-2x mb-2"></i>
-                                <small>Browse</small>
-                            </a>
-                        </div>
-                        <div class="col-md-2 col-sm-4 col-6">
-                            <a href="{% url 'macros:popular_macros' %}" class="btn btn-outline-warning w-100 d-flex flex-column align-items-center py-3">
-                                <i class="fas fa-fire fa-2x mb-2"></i>
-                                <small>Popular</small>
-                            </a>
-                        </div>
-                        <div class="col-md-2 col-sm-4 col-6">
-                            <a href="{% url 'accounts:edit_profile' %}" class="btn btn-outline-dark w-100 d-flex flex-column align-items-center py-3">
-                                <i class="fas fa-cog fa-2x mb-2"></i>
-                                <small>Settings</small>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <div class="row">
         <!-- Recent Uploads -->
         <div class="col-lg-6 mb-4">
@@ -282,15 +229,6 @@
 
 .stat-card {
     transition: all 0.3s ease;
-}
-
-
-.quick-action-btn {
-    aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
 }
 </style>
 {% endblock %} 
