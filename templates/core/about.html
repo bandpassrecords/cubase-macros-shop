@@ -48,7 +48,7 @@
                                         </div>
                                         <div>
                                             <h5 class="mb-2">Easy Upload</h5>
-                                            <p class="text-muted mb-0">
+                                            <p class="text-light mb-0" style="opacity: 0.85;">
                                                 Upload your Cubase Key Commands.xml file and our system automatically 
                                                 parses and extracts all your macros, making them ready to share.
                                             </p>
@@ -63,7 +63,7 @@
                                         </div>
                                         <div>
                                             <h5 class="mb-2">Community Sharing</h5>
-                                            <p class="text-muted mb-0">
+                                            <p class="text-light mb-0" style="opacity: 0.85;">
                                                 Share your macros publicly or keep them private. Add descriptions, 
                                                 tags, and categorize them for easy discovery by other producers.
                                             </p>
@@ -78,7 +78,7 @@
                                         </div>
                                         <div>
                                             <h5 class="mb-2">Discover & Download</h5>
-                                            <p class="text-muted mb-0">
+                                            <p class="text-light mb-0" style="opacity: 0.85;">
                                                 Browse through thousands of macros created by the community. 
                                                 Search by function, Cubase version, or popularity.
                                             </p>
@@ -93,7 +93,7 @@
                                         </div>
                                         <div>
                                             <h5 class="mb-2">Seamless Integration</h5>
-                                            <p class="text-muted mb-0">
+                                            <p class="text-light mb-0" style="opacity: 0.85;">
                                                 Download selected macros as a ready-to-use Key Commands.xml file 
                                                 that you can directly import into your Cubase installation.
                                             </p>
@@ -178,7 +178,7 @@
                         </section>
 
                         <!-- Contact Section -->
-                        <section class="mb-0">
+                        <section class="mb-5">
                             <div class="alert alert-info">
                                 <h5 class="alert-heading">
                                     <i class="fas fa-envelope me-2"></i>Get in Touch
@@ -189,6 +189,21 @@
                                 <a href="{% url 'core:contact' %}" class="btn btn-info">
                                     <i class="fas fa-paper-plane me-2"></i>Contact Us
                                 </a>
+                            </div>
+                        </section>
+
+                        <!-- Trademark Section -->
+                        <section class="mb-0">
+                            <div class="card border-secondary bg-dark">
+                                <div class="card-body">
+                                    <p class="text-light mb-2 small" style="opacity: 0.8;">
+                                        &copy; DAW Macros Hub by BandPass Records. All rights reserved.
+                                    </p>
+                                    <p class="text-light mb-0 small" style="opacity: 0.7;">
+                                        Cubase is a registered trademark of Steinberg Media Technologies GmbH.<br>
+                                        DAW Macros Hub is not affiliated with or endorsed by Steinberg.
+                                    </p>
+                                </div>
                             </div>
                         </section>
                     </div>
@@ -203,11 +218,11 @@
 <style>
     .about-content {
         line-height: 1.8;
-        color: #333;
+        color: var(--text-primary);
     }
     
     .about-content h2 {
-        color: #2c3e50;
+        color: var(--text-primary);
         font-weight: 600;
         margin-top: 2rem;
     }
@@ -217,12 +232,13 @@
     }
     
     .about-content h5 {
-        color: #34495e;
+        color: var(--text-primary);
         font-weight: 600;
     }
     
     .about-content p {
         margin-bottom: 1rem;
+        color: var(--text-secondary);
     }
     
     .feature-icon {
@@ -231,22 +247,46 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: rgba(13, 110, 253, 0.1);
+        background: rgba(59, 130, 246, 0.15);
         border-radius: 10px;
         flex-shrink: 0;
     }
     
     .about-content a {
-        color: #007bff;
+        color: var(--primary-color);
         text-decoration: none;
     }
     
     .about-content a:hover {
+        color: var(--primary-hover);
         text-decoration: underline;
+    }
+    
+    /* Ensure buttons maintain their original colors and don't inherit from .about-content a */
+    .about-content .btn {
+        color: #ffffff !important;
+        text-decoration: none !important;
+    }
+    
+    .about-content .btn:hover {
+        color: #ffffff !important;
+        text-decoration: none !important;
+    }
+    
+    .about-content .btn-outline-primary {
+        color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    .about-content .btn-outline-primary:hover {
+        color: #ffffff !important;
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
     }
     
     .list-unstyled li {
         padding-left: 0;
+        color: var(--text-secondary);
     }
 </style>
 {% endblock %}
