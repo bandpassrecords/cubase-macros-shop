@@ -635,13 +635,43 @@ def upload_and_download(request):
 @login_required
 def edit_macro(request, macro_id):
     """Edit a macro"""
-    macro = get_object_or_404(
-        Macro,
-        id=macro_id,
-        user=request.user
-    )
+    # First check if macro exists
+    try:
+        macro = Macro.objects.get(id=macro_id)
+    except Macro.DoesNotExist:
+        messages.error(request, 'The macro you are trying to edit does not exist or has been deleted.')
+        return redirect('macros:macro_list')
+    
+    # Check if user owns the macro
+    if macro.user != request.user:
+        messages.error(request, 'You do not have permission to edit this macro.')
+        return redirect('macros:macro_detail', macro_id=macro.id)
     
     if request.method == 'POST':
+        # Check if this is a delete action
+        if request.POST.get('action') == 'delete_macro':
+            macro_name = macro.name
+            macro.delete()
+            messages.success(request, f'Macro "{macro_name}" has been deleted successfully.')
+            
+            # Get the referrer URL or default to profile
+            referer = request.META.get('HTTP_REFERER')
+            if referer:
+                # Check if referer is from the same site (basic security check)
+                from django.http import HttpResponseRedirect
+                from urllib.parse import urlparse
+                
+                referer_parsed = urlparse(referer)
+                current_parsed = urlparse(request.build_absolute_uri())
+                
+                # Only redirect to referer if it's from the same domain and NOT the edit page
+                if (referer_parsed.netloc == current_parsed.netloc or not referer_parsed.netloc) and '/edit/' not in referer_parsed.path:
+                    return HttpResponseRedirect(referer)
+            
+            # Default to user profile if no referrer, referrer is external, or referrer is the edit page
+            return redirect('accounts:profile')
+        
+        # Handle normal form submission
         form = MacroForm(request.POST, instance=macro)
         if form.is_valid():
             form.save()
