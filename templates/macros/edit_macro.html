@@ -208,7 +208,9 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             if (!nameInput.value.trim()) {
                 e.preventDefault();
-                alert('Macro name is required.');
+                if (window.showToast) {
+                    showToast('Macro name is required.', 'warning');
+                }
                 nameInput.focus();
                 return false;
             }

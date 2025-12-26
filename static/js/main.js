@@ -165,7 +165,7 @@
                 .toast-notification {
                     position: fixed;
                     top: 20px;
-                    right: 20px;
+                    left: 20px;
                     background: #1e293b;
                     color: #f1f5f9;
                     padding: 1rem 1.5rem;
@@ -173,7 +173,7 @@
                     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
                     border: 1px solid #334155;
                     z-index: 10000;
-                    animation: slideInRight 0.3s ease-out;
+                    animation: slideInLeft 0.3s ease-out;
                     display: flex;
                     align-items: center;
                     gap: 0.75rem;
@@ -216,9 +216,9 @@
                     color: inherit;
                 }
                 
-                @keyframes slideInRight {
+                @keyframes slideInLeft {
                     from {
-                        transform: translateX(100%);
+                        transform: translateX(-100%);
                         opacity: 0;
                     }
                     to {
@@ -232,11 +232,11 @@
         
         document.body.appendChild(toast);
         
-        // Auto remove after 3 seconds
+        // Auto remove after 4 seconds
         setTimeout(() => {
-            toast.style.animation = 'slideInRight 0.3s ease-out reverse';
+            toast.style.animation = 'slideInLeft 0.3s ease-out reverse';
             setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        }, 4000);
     };
     
     function getToastIcon(type) {

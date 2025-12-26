@@ -343,7 +343,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const count = document.querySelectorAll('.macro-checkbox:checked').length;
         if (count === 0) {
             e.preventDefault();
-            alert('Please select at least one macro to embed.');
+            if (window.showToast) {
+                showToast('Please select at least one macro to embed.', 'warning');
+            }
             return;
         }
         

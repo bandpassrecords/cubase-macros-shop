@@ -199,7 +199,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Validate file type
         if (!file.name.toLowerCase().endsWith('.xml')) {
-            alert('Please select an XML file.');
+            if (window.showToast) {
+                showToast('Please select an XML file.', 'warning');
+            }
             fileInput.value = '';
             resetFileLabel();
             return;
@@ -207,7 +209,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Validate file size
         if (file.size > 10 * 1024 * 1024) {
-            alert('File size must be less than 10MB.');
+            if (window.showToast) {
+                showToast('File size must be less than 10MB.', 'warning');
+            }
             fileInput.value = '';
             resetFileLabel();
             return;
@@ -218,7 +222,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (form && uploadBtn) {
         form.addEventListener('submit', function(e) {
             if (!fileInput.files.length) {
-                alert('Please select your Key Commands.xml file.');
+                if (window.showToast) {
+                    showToast('Please select your Key Commands.xml file.', 'warning');
+                }
                 e.preventDefault();
                 return;
             }

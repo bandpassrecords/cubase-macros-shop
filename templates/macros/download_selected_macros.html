@@ -309,7 +309,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (selectedCount === 0) {
             e.preventDefault();
-            alert('Please select at least one macro to download.');
+            if (window.showToast) {
+                showToast('Please select at least one macro to download.', 'warning');
+            }
             return false;
         }
         

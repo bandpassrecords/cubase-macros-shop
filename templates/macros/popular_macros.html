@@ -295,14 +295,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         this.disabled = false;
                     }, 2000);
                 } else {
-                    alert(data.message);
+                    if (window.showToast) {
+                        showToast(data.message, 'error');
+                    }
                     this.innerHTML = originalText;
                     this.disabled = false;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred. Please try again.');
+                if (window.showToast) {
+                    showToast('An error occurred. Please try again.', 'error');
+                }
                 this.innerHTML = originalText;
                 this.disabled = false;
             });

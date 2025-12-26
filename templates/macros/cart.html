@@ -121,14 +121,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        location.reload();
+                        if (window.showToast) {
+                            showToast('Macro removed from cart', 'success');
+                        }
+                        setTimeout(() => location.reload(), 500);
                     } else {
-                        alert(data.message);
+                        if (window.showToast) {
+                            showToast(data.message, 'error');
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
+                    if (window.showToast) {
+                        showToast('An error occurred. Please try again.', 'error');
+                    }
                 });
             }
         });

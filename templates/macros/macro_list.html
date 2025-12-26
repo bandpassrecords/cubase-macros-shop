@@ -326,7 +326,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (!csrftoken) {
                     console.error('CSRF token not found');
-                    alert('Security token missing. Please refresh the page.');
+                    if (window.showToast) {
+                        showToast('Security token missing. Please refresh the page.', 'error');
+                    }
                     return;
                 }
                 
@@ -372,7 +374,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert(error.message || 'Something went wrong. Please refresh the page and try again.');
+                    if (window.showToast) {
+                        showToast(error.message || 'Something went wrong. Please refresh the page and try again.', 'error');
+                    }
                 })
                 .finally(() => {
                     this.disabled = false;
@@ -433,14 +437,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         this.disabled = false;
                     }, 2000);
                 } else {
-                    alert(data.message);
+                    if (window.showToast) {
+                        showToast(data.message, 'error');
+                    }
                     this.innerHTML = originalText;
                     this.disabled = false;
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred. Please try again.');
+                if (window.showToast) {
+                    showToast('An error occurred. Please try again.', 'error');
+                }
                 this.innerHTML = originalText;
                 this.disabled = false;
             });

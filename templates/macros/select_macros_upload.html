@@ -197,7 +197,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const selected = document.querySelectorAll('.macro-checkbox:checked').length;
         if (selected === 0) {
             e.preventDefault();
-            alert('Please select at least one macro to save.');
+            if (window.showToast) {
+                showToast('Please select at least one macro to save.', 'warning');
+            }
             return false;
         }
         
