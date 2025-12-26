@@ -192,7 +192,8 @@ ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_SIGNUP_EMAIL_ENTER_TWICE = False
 ACCOUNT_SESSION_REMEMBER = True  # Remember user login
 ACCOUNT_USER_MODEL_EMAIL_FIELD = 'email'  # Use email as primary identifier
-# ACCOUNT_ADAPTER = 'accounts.adapters.CustomAccountAdapter'  # Optional: uncomment if you create a custom adapter
+ACCOUNT_ADAPTER = 'accounts.adapters.CustomAccountAdapter'  # Custom adapter for regular signups
+SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'  # Custom adapter for social signups
 
 # Social Account Settings
 SOCIALACCOUNT_AUTO_SIGNUP = True  # Automatically create account on social login
