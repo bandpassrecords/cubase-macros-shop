@@ -555,7 +555,23 @@ def add_to_cart(request, macro_id):
     if 'macro_cart' not in request.session:
         request.session['macro_cart'] = []
     
-    cart = request.session['macro_cart']
+    # Clean up any deleted macros from the cart first
+    cart = request.session.get('macro_cart', [])
+    valid_cart_ids = []
+    for cart_id_str in cart:
+        try:
+            Macro.objects.get(id=cart_id_str)
+            valid_cart_ids.append(cart_id_str)
+        except Macro.DoesNotExist:
+            # Macro was deleted, skip it
+            continue
+    
+    # Update cart if needed
+    if len(valid_cart_ids) != len(cart):
+        request.session['macro_cart'] = valid_cart_ids
+        request.session.modified = True
+        cart = valid_cart_ids
+    
     macro_id_str = str(macro_id)
     
     # Check if macro is already in cart
@@ -572,17 +588,32 @@ def add_to_cart(request, macro_id):
 @require_http_methods(["POST"])
 def remove_from_cart(request, macro_id):
     """Remove a macro from the user's cart"""
+    # First, clean up any deleted macros from the cart
+    cart = request.session.get('macro_cart', [])
+    valid_cart_ids = []
+    for cart_id_str in cart:
+        try:
+            Macro.objects.get(id=cart_id_str)
+            valid_cart_ids.append(cart_id_str)
+        except Macro.DoesNotExist:
+            # Macro was deleted, skip it
+            continue
+    
+    # Update cart if needed
+    if len(valid_cart_ids) != len(cart):
+        request.session['macro_cart'] = valid_cart_ids
+        request.session.modified = True
+        cart = valid_cart_ids
+    
+    # Now remove the requested macro
     macro_id_str = str(macro_id)
+    if macro_id_str in cart:
+        cart.remove(macro_id_str)
+        request.session['macro_cart'] = cart
+        request.session.modified = True
+        return JsonResponse({'success': True, 'message': 'Macro removed from cart', 'cart_count': len(cart)})
     
-    if 'macro_cart' in request.session:
-        cart = request.session['macro_cart']
-        if macro_id_str in cart:
-            cart.remove(macro_id_str)
-            request.session['macro_cart'] = cart
-            request.session.modified = True
-            return JsonResponse({'success': True, 'message': 'Macro removed from cart', 'cart_count': len(cart)})
-    
-    return JsonResponse({'success': False, 'message': 'Macro not in cart', 'cart_count': len(request.session.get('macro_cart', []))})
+    return JsonResponse({'success': False, 'message': 'Macro not in cart', 'cart_count': len(cart)})
 
 
 @login_required
@@ -597,7 +628,7 @@ def view_cart(request):
         }
         return render(request, 'macros/cart.html', context)
     
-    # Get all macros in cart
+    # Get all macros in cart and filter out deleted ones
     macros = Macro.objects.filter(
         id__in=cart,
         is_private=False
@@ -606,9 +637,17 @@ def view_cart(request):
         total_votes=Count('votes')
     ).order_by('name')
     
+    # Clean up cart - remove any deleted macros
+    valid_cart_ids = [str(macro.id) for macro in macros]
+    if len(valid_cart_ids) != len(cart):
+        request.session['macro_cart'] = valid_cart_ids
+        request.session.modified = True
+        if len(valid_cart_ids) < len(cart):
+            messages.info(request, f'Some macros in your cart have been removed as they no longer exist.')
+    
     context = {
         'macros': macros,
-        'cart_count': len(cart),
+        'cart_count': len(valid_cart_ids),
     }
     
     return render(request, 'macros/cart.html', context)
@@ -633,11 +672,24 @@ def upload_and_download(request):
         messages.error(request, 'Your cart is empty. Please add some macros first.')
         return redirect('macros:view_cart')
     
-    # Get all macros in cart
+    # Get all macros in cart and filter out deleted ones
     selected_macros = Macro.objects.filter(
         id__in=cart,
         is_private=False
     )
+    
+    # Clean up cart - remove any deleted macros
+    valid_cart_ids = [str(macro.id) for macro in selected_macros]
+    if len(valid_cart_ids) != len(cart):
+        request.session['macro_cart'] = valid_cart_ids
+        request.session.modified = True
+        if len(valid_cart_ids) < len(cart):
+            messages.warning(request, f'Some macros in your cart have been removed as they no longer exist.')
+    
+    # Check if cart is now empty after cleanup
+    if not valid_cart_ids:
+        messages.error(request, 'Your cart is empty. Please add some macros first.')
+        return redirect('macros:view_cart')
     
     if request.method == 'POST':
         user_file = request.FILES.get('user_file')
@@ -727,21 +779,7 @@ def edit_macro(request, macro_id):
             macro.delete()
             messages.success(request, f'Macro "{macro_name}" has been deleted successfully.')
             
-            # Get the referrer URL or default to profile
-            referer = request.META.get('HTTP_REFERER')
-            if referer:
-                # Check if referer is from the same site (basic security check)
-                from django.http import HttpResponseRedirect
-                from urllib.parse import urlparse
-                
-                referer_parsed = urlparse(referer)
-                current_parsed = urlparse(request.build_absolute_uri())
-                
-                # Only redirect to referer if it's from the same domain and NOT the edit page
-                if (referer_parsed.netloc == current_parsed.netloc or not referer_parsed.netloc) and '/edit/' not in referer_parsed.path:
-                    return HttpResponseRedirect(referer)
-            
-            # Default to user profile if no referrer, referrer is external, or referrer is the edit page
+            # Redirect to user profile after deletion
             return redirect('accounts:profile')
         
         # Handle normal form submission

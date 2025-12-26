@@ -13,9 +13,9 @@
                 </h1>
                 {% if cart_count > 0 %}
                 <div>
-                    <a href="{% url 'macros:clear_cart' %}" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to clear your cart?')">
+                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#clearCartModal">
                         <i class="fas fa-trash"></i> Clear Cart
-                    </a>
+                    </button>
                 </div>
                 {% endif %}
             </div>
@@ -100,6 +100,59 @@
         </div>
     </div>
 </div>
+
+<!-- Clear Cart Confirmation Modal -->
+<div class="modal fade" id="clearCartModal" tabindex="-1" aria-labelledby="clearCartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="clearCartModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>Clear Cart
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to clear your cart? This will remove all {{ cart_count }} macro{{ cart_count|pluralize }} from your cart.</p>
+                <p class="text-muted small mt-2 mb-0">
+                    <i class="fas fa-info-circle"></i> This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <a href="{% url 'macros:clear_cart' %}" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Clear Cart
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Remove From Cart Confirmation Modal -->
+<div class="modal fade" id="removeFromCartModal" tabindex="-1" aria-labelledby="removeFromCartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="removeFromCartModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>Remove from Cart
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Are you sure you want to remove this macro from your cart?</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmRemoveBtn">
+                    <i class="fas fa-times"></i> Remove
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -110,33 +163,48 @@ document.addEventListener('DOMContentLoaded', function() {
     removeButtons.forEach(button => {
         button.addEventListener('click', function() {
             const macroId = this.dataset.macroId;
-            if (confirm('Remove this macro from your cart?')) {
-                fetch(`/macros/cart/remove/${macroId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                        'Content-Type': 'application/json',
-                    },
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        if (window.showToast) {
-                            showToast('Macro removed from cart', 'success');
+            // Set the macro ID for the remove modal
+            const removeModal = document.getElementById('removeFromCartModal');
+            if (removeModal) {
+                const confirmBtn = removeModal.querySelector('#confirmRemoveBtn');
+                if (confirmBtn) {
+                    confirmBtn.onclick = function() {
+                        fetch(`/macros/cart/remove/${macroId}/`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token }}',
+                                'Content-Type': 'application/json',
+                            },
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                if (window.showToast) {
+                                    showToast('Macro removed from cart', 'success');
+                                }
+                                setTimeout(() => location.reload(), 500);
+                            } else {
+                                if (window.showToast) {
+                                    showToast(data.message, 'error');
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            if (window.showToast) {
+                                showToast('An error occurred. Please try again.', 'error');
+                            }
+                        });
+                        // Close modal
+                        const modalInstance = bootstrap.Modal.getInstance(removeModal);
+                        if (modalInstance) {
+                            modalInstance.hide();
                         }
-                        setTimeout(() => location.reload(), 500);
-                    } else {
-                        if (window.showToast) {
-                            showToast(data.message, 'error');
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    if (window.showToast) {
-                        showToast('An error occurred. Please try again.', 'error');
-                    }
-                });
+                    };
+                }
+                // Show the modal
+                const modal = new bootstrap.Modal(removeModal);
+                modal.show();
             }
         });
     });
